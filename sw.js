@@ -3,7 +3,15 @@ const CHANNEL = '__CHANNEL__';
 const REVISION = '__REVISION__';
 const CACHE = '25words-' + CHANNEL + '-' + REVISION;
 const ASSETS = ['./', './index.html', './cache.js?v=' + REVISION];
-if (CHANNEL === 'dev') ASSETS.push('./app.js?v=' + REVISION);
+if (CHANNEL === 'dev') ASSETS.push(
+  './app.js?v=' + REVISION,
+  './manifest.json?v=' + REVISION,
+  './icon.svg?v=' + REVISION,
+  './favicon-32.png?v=' + REVISION,
+  './apple-touch-icon.png?v=' + REVISION,
+  './icon-192.png?v=' + REVISION,
+  './icon-512.png?v=' + REVISION
+);
 
 self.addEventListener('install', event => {
   event.waitUntil(

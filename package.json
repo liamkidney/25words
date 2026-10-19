@@ -5,5 +5,8 @@
   "scripts": {
     "test": "node --test",
     "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }

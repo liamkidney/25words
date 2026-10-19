@@ -17,8 +17,10 @@ class FakeElement {
     this.focused = false;
     this.capturedPointer = null;
     this.style = {};
+    this.classList = { add() {}, remove() {} };
   }
   get firstElementChild() { return this.children[0]; }
+  appendChild(child) { this.children.push(child); return child; }
   replaceChildren(...children) { this.children = children; }
   setAttribute(key, value) { this.attributes.set(key, String(value)); }
   getAttribute(key) { return this.attributes.get(key) ?? null; }
@@ -39,7 +41,7 @@ class FakeElement {
 }
 
 async function runApp({ savedIndex = null, count = 100, failing = false, savedProgress = null, secondPack = false } = {}) {
-  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b'];
+  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b','tap-count','tap-number','tap-undo','tap-reset'];
   const elements = Object.fromEntries(ids.map(id => [id,new FakeElement()]));
   elements.header.replaceChildren(elements['menu-toggle'], elements['list-menu']);
   elements['list-menu'].replaceChildren(elements['pack-options'], elements['list-options']);
@@ -48,6 +50,9 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   elements['reveal-cover'].hidden = true;
   elements['menu-toggle'].disabled = true;
   elements.next.disabled = true;
+  elements['tap-number'].textContent = '0';
+  elements['tap-undo'].disabled = true;
+  elements['tap-reset'].disabled = true;
 
   const document = new FakeElement();
   document.createElement = () => new FakeElement();
@@ -80,6 +85,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
     return {ok:false,status:404};
   };
   const window = new FakeElement();
+  window.matchMedia = () => ({ matches: false });
   runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
   return {elements,document,window,store};
@@ -382,4 +388,35 @@ test('no user progress is written to Supabase',async()=>{
   elements['reveal-cover'].dispatch('pointerdown',{pointerId:3,pointerType:'touch'});
   assert.ok(store.has('25words-progress-v2'));
   assert.doesNotMatch(script,/method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
+});
+
+
+test('tally starts at zero, increments, subtracts and resets with background updates', async () => {
+  assert.match(html, /id="tap-count"/);
+  assert.match(html, /id="tap-undo"/);
+  assert.match(html, /id="tap-reset"/);
+  const { elements } = await runApp();
+  const count = elements['tap-count'];
+  const number = elements['tap-number'];
+  const undo = elements['tap-undo'];
+  const reset = elements['tap-reset'];
+  assert.equal(number.textContent, '0');
+  assert.equal(undo.disabled, true);
+  assert.equal(reset.disabled, true);
+  const initialGradient = elements['round-backdrop-a'].style.backgroundImage;
+  count.dispatch('click');
+  assert.equal(number.textContent, '1');
+  assert.equal(undo.disabled, false);
+  assert.equal(reset.disabled, false);
+  assert.notEqual(elements['round-backdrop-b'].style.backgroundImage, initialGradient);
+  count.dispatch('click');
+  assert.equal(number.textContent, '2');
+  undo.dispatch('click');
+  assert.equal(number.textContent, '1');
+  reset.dispatch('click');
+  assert.equal(number.textContent, '0');
+  assert.equal(undo.disabled, true);
+  assert.equal(reset.disabled, true);
+  undo.dispatch('click');
+  assert.equal(number.textContent, '0');
 });

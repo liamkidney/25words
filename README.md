@@ -7,7 +7,7 @@ Minimal word-list web app. Displays one list of ten words at a time with a **Nex
 - Production: https://liamkidney.github.io/25words/ — branch `main`.
 - Development: https://liamkidney.github.io/25words/dev/ — branch `dev`.
 
-The [GitHub Actions deploy workflow](.github/workflows/deploy.yml) checks out both branches, runs tests independently, builds each, and deploys both to GitHub Pages in a single artifact. Any push to `main` or `dev` triggers deployment.
+The [Pages deployment workflow](.github/workflows/pages.yml) checks out both branches, runs tests independently, builds each, and deploys both to GitHub Pages in a single artifact. Pushes to `main` deploy both sites. Pushes to `dev` first run the [development validation workflow](.github/workflows/check-dev.yml), which triggers deployment only if validation passes.
 
 ## Data
 

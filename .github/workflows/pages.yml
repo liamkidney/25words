@@ -58,11 +58,19 @@ jobs:
       - name: Build production and development
         run: |
           set -euo pipefail
-          SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
-          SITE_OUT="$GITHUB_WORKSPACE/_site/dev" npm run build --prefix development
+          PROD_SHA=$(git -C production rev-parse --short=8 HEAD)
+          DEV_SHA=$(git -C development rev-parse --short=8 HEAD)
+          SITE_CHANNEL=prod SITE_REVISION="$PROD_SHA" SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
+          SITE_CHANNEL=dev SITE_REVISION="$DEV_SHA" SITE_OUT="$GITHUB_WORKSPACE/_site/dev" npm run build --prefix development
           touch _site/.nojekyll
           test -s _site/index.html
           test -s _site/dev/index.html
+          test -s _site/sw.js
+          test -s _site/dev/sw.js
+          test -s _site/dev/app.js
+          grep -Fq "cache.js?v=$PROD_SHA" _site/index.html
+          grep -Fq "app.js?v=$DEV_SHA" _site/dev/index.html
+          grep -Fq "cache.js?v=$DEV_SHA" _site/dev/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

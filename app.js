@@ -143,6 +143,8 @@ function buildListSelector() {
 revealCover.addEventListener('pointerdown', event => {
   if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
   if (activePointer !== null || activeKey !== null || index >= lists.length) return;
+  // Suppress the browser's native selection/drag gesture before showing words.
+  event.preventDefault();
   activePointer = event.pointerId;
   // Pointer capture keeps release events attached to the cover even if the
   // finger moves away from it before the user releases.
@@ -173,6 +175,13 @@ revealCover.addEventListener('keyup', event => {
 });
 revealCover.addEventListener('blur', hideWords);
 revealCover.addEventListener('contextmenu', event => event.preventDefault());
+// iOS Safari can initiate selection on the revealed words or child spans even
+// when user-select:none is applied. Guard all controls, not just the overlay.
+for (const type of ['selectstart', 'dragstart']) {
+  document.addEventListener(type, event => {
+    if (event.target?.closest?.('.panel')) event.preventDefault();
+  });
+}
 window.addEventListener('blur', hideWords);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') hideWords();

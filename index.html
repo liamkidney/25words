@@ -40,6 +40,13 @@
       padding: 28px;
       box-shadow: 0 10px 40px #00000008;
     }
+    /* Game controls are pressed and held; text selection and iOS callouts
+       must not compete with touch or mouse gestures. */
+    .panel, .panel * {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
     .header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 12px; }
     h1 { font-size: 1.55rem; line-height: 1.2; margin: 0; }
     #counter { color: #697178; font-size: .9rem; margin: 8px 0 22px; }

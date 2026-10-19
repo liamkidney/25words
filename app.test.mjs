@@ -28,7 +28,9 @@ class FakeElement {
     this.listeners.get(key).push(fn);
   }
   dispatch(key, event = {}) {
-    for (const fn of this.listeners.get(key) ?? []) fn({ target: this, ...event });
+    for (const fn of this.listeners.get(key) ?? []) {
+      fn({ target: this, preventDefault() {}, ...event });
+    }
   }
   focus() { this.focused = true; }
   scrollIntoView() {}
@@ -114,6 +116,34 @@ test('words reveal only while pointer is held, then hide on release',async()=>{
   assert.equal(cover.getAttribute('aria-pressed'),'false');
   cover.dispatch('click'); // A release-generated click must not leave words exposed.
   assert.equal(elements.words.hidden,true);
+});
+
+test('press-and-hold prevents native selection and drag of game text',async()=>{
+  assert.match(html,/\.panel, \.panel \* \{[^}]*-webkit-user-select: none;[^}]*user-select: none;[^}]*-webkit-touch-callout: none;/s);
+  const {elements,document}=await runApp();
+  const cover=elements['reveal-cover'];
+  let prevented=0;
+  cover.dispatch('pointerdown',{
+    pointerId:4,pointerType:'touch',isPrimary:true,
+    preventDefault:()=>prevented++
+  });
+  assert.equal(prevented,1);
+  assert.equal(elements.words.hidden,false);
+  cover.dispatch('pointerup',{pointerId:4});
+  assert.equal(elements.words.hidden,true);
+
+  for (const eventType of ['selectstart','dragstart']) {
+    document.dispatch(eventType,{
+      target:{closest:selector=>selector==='.panel'?elements.words:null},
+      preventDefault:()=>prevented++
+    });
+  }
+  assert.equal(prevented,3);
+  document.dispatch('selectstart',{
+    target:{closest:()=>null},
+    preventDefault:()=>prevented++
+  });
+  assert.equal(prevented,3);
 });
 
 test('unrelated pointers, cancelled touch, and lost pointer capture are handled',async()=>{

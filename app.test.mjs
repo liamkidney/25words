@@ -98,11 +98,11 @@ test('compact app header and bottom sheet follow the agreed visual hierarchy', a
   const tapIndex = html.indexOf('<section class="tap-counter"');
   const sheetIndex = html.indexOf('<main class="panel">');
   assert.ok(headerIndex > 0 && tapIndex > headerIndex && sheetIndex > tapIndex);
-  assert.match(html, /<h1>25 Words <span>or Less<\\/span><\\/h1>/);
-  assert.match(html, /<div id="pack-label"><\\/div><div id="counter">Loading lists/);
-  assert.match(html, /\\.app-layout \\{[^}]*min-height: calc\\(100dvh - env\\(safe-area-inset-top, 0px\\)\\);/s);
-  assert.match(html, /\\.panel \\{[^}]*border-radius: 28px 28px 0 0;/s);
-  assert.match(html, /padding: 26px 24px calc\\(22px \\+ env\\(safe-area-inset-bottom, 0px\\)\\)/);
+  assert.match(html, /<h1>25 Words <span>or Less<\/span><\/h1>/);
+  assert.match(html, /<div id="pack-label"><\/div><div id="counter">Loading lists/);
+  assert.match(html, /\.app-layout \{[^}]*min-height: calc\(100dvh - env\(safe-area-inset-top, 0px\)\);/s);
+  assert.match(html, /\.panel \{[^}]*border-radius: 28px 28px 0 0;/s);
+  assert.match(html, /padding: 26px 24px calc\(22px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   const {elements}=await runApp();
   assert.equal(elements['pack-label'].textContent, 'Pack 1');
   assert.equal(elements.counter.textContent, 'List 1 of 100');
@@ -116,7 +116,7 @@ test('menu and reveal button are present and accessible',()=>{
   assert.match(html,/id="list-menu"[^>]+hidden/);
   assert.match(html,/id="reveal-cover"[^>]+aria-controls="words"/);
   assert.match(html,/aria-label="Press and hold to reveal words"/);
-  assert.match(html, /<button id="reveal-cover"[^>]*hidden><\\/button>/);
+  assert.match(html, /<button id="reveal-cover"[^>]*hidden><\/button>/);
   assert.doesNotMatch(html, /class="cover-icon"|>Press and hold to reveal words</);
   assert.match(html,/class="round-backdrop" aria-hidden="true"/);
   assert.match(html,/prefers-reduced-motion: reduce/);
@@ -321,7 +321,7 @@ test('saved list position recreates same colour; finishing does not shift',async
 });
 
 test('word stage reserves a fixed area independent of revealing content',()=>{
-  assert.match(html,/\\.word-stage\\s*\\{\\s*position:\\s*relative;\\s*height:\\s*clamp\\(220px, 31dvh, 265px\\);\\s*\\}/);
+  assert.match(html,/\.word-stage\s*\{\s*position:\s*relative;\s*height:\s*clamp\(220px, 31dvh, 265px\);\s*\}/);
   assert.match(html,/#words\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow-y:\s*auto;/s);
   assert.match(html,/\.reveal-cover\s*\{[^}]*position:\s*absolute;[^}]*height:\s*100%;/s);
   assert.doesNotMatch(html,/\.word-stage\s*\{[^}]*min-height:/);
@@ -513,8 +513,8 @@ test('tally is shared across pack selection and persists independently of pack p
 
 test('tally buttons are stacked at the left edge, outside the central counter target', () => {
   assert.match(html, /\.tap-counter \{ position: relative;/);
-  assert.match(html, /\\.tap-controls \\{[^}]*left: 18px;[^}]*flex-direction: column;/);
-  assert.match(html, /\\.tap-control \\{[^}]*border-radius: 12px;[^}]*background: #ffffff54;/);
+  assert.match(html, /\.tap-controls \{[^}]*left: 18px;[^}]*flex-direction: column;/);
+  assert.match(html, /\.tap-control \{[^}]*border-radius: 12px;[^}]*background: #ffffff54;/);
   assert.match(html, /id="tap-undo"[^>]*aria-label="Subtract one"/);
   assert.match(html, /id="tap-reset"[^>]*aria-label="Reset counter to zero"/);
 });

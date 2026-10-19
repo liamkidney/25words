@@ -48,6 +48,11 @@ function updateRoundBackground() {
   if (key === lastBackgroundKey) return;
   const packOffset = Math.max(0, packs.findIndex(pack => pack.id === activePackId)) * 3;
   const gradient = roundGradients[(index + packOffset + tally) % roundGradients.length];
+  // Keep the browser/PWA status-bar fallback in the same palette as the
+  // fullscreen gradient, even on iOS versions that sample the body colour.
+  const topColour = gradient.match(/#[a-f\d]{6}/i)[0];
+  document.body.style.backgroundColor = topColour;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColour);
   if (lastBackgroundKey === null) {
     backdropLayers[0].style.backgroundImage = gradient;
     backdropLayers[0].style.opacity = '1';

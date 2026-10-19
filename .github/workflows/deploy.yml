@@ -1,0 +1,56 @@
+name: Deploy 25 Words Pages
+on:
+  push:
+    branches: [main, dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout production
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+      - name: Checkout development
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: development
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install production dependencies
+        run: npm install --prefix production --no-audit --no-fund
+      - name: Test production
+        run: npm test --prefix production
+      - name: Install development dependencies
+        run: npm install --prefix development --no-audit --no-fund
+      - name: Test development
+        run: npm test --prefix development
+      - name: Build production
+        run: SITE_OUT="$GITHUB_WORKSPACE/_site" npm run build --prefix production
+      - name: Build development
+        run: SITE_OUT="$GITHUB_WORKSPACE/_site/dev" npm run build --prefix development
+      - name: Prepare Pages
+        run: touch _site/.nojekyll
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

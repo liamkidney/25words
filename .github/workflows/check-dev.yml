@@ -27,7 +27,7 @@ jobs:
         run: npm install --prefix development --no-audit --no-fund
 
       - name: Validate JavaScript
-        run: node --check development/build.mjs && node --check development/app.test.mjs
+        run: node --check development/app.js && node --check development/build.mjs && node --check development/app.test.mjs
 
       - name: Run tests
         run: npm test --prefix development

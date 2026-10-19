@@ -38,6 +38,9 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     assert.match(iconSvg, /stop-color="#849fe3"/);
     const manifest = JSON.parse(readFileSync(join(output, 'manifest.json'), 'utf8'));
     assert.equal(manifest.id, '/25words/dev/');
+    assert.equal(manifest.name, '25 Words Dev');
+    assert.equal(manifest.short_name, '25 Words Dev');
+    assert.match(html, /name="apple-mobile-web-app-title" content="25 Words Dev"/);
     assert.equal(manifest.icons.length, 3);
     assert.match(manifest.icons[0].src, /\?v=1abcde99$/);
     for (const [file, size] of [

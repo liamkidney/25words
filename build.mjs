@@ -61,7 +61,7 @@ if (channel === 'dev') {
   );
   const manifest = {
     name: '25 Words Dev',
-    short_name: '25 Words',
+    short_name: '25 Words Dev',
     id: '/25words/dev/',
     start_url: './',
     scope: './',

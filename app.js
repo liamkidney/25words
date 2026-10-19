@@ -67,6 +67,8 @@ function changeTally(value) {
   if (nextValue === tally) return;
   const previous = tally;
   tally = nextValue;
+  progress.tally = tally;
+  saveProgress();
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   tapNumber.textContent = String(tally);
   tapUndo.disabled = tally === 0;
@@ -95,6 +97,12 @@ let lists = [];
 let index = 0;
 let requestNumber = 0;
 let progress = readProgress();
+// Restore the counter alongside the saved pack, position and viewed history.
+// Restoring it must not trigger an animation or overwrite existing progress.
+tally = progress.tally;
+tapNumber.textContent = String(tally);
+tapUndo.disabled = tally === 0;
+tapReset.disabled = tally === 0;
 let activePointer = null;
 let activeKey = null;
 
@@ -123,7 +131,8 @@ function readProgress() {
       return {
         activePackId: typeof saved.activePackId === 'string' ? saved.activePackId : 'pack-1',
         positions: saved.positions && typeof saved.positions === 'object' ? saved.positions : {},
-        viewed: saved.viewed && typeof saved.viewed === 'object' ? saved.viewed : {}
+        viewed: saved.viewed && typeof saved.viewed === 'object' ? saved.viewed : {},
+        tally: Number.isSafeInteger(saved.tally) && saved.tally >= 0 ? saved.tally : 0
       };
     }
   } catch (_) { /* Old or malformed progress must not break the game. */ }
@@ -134,7 +143,7 @@ function readProgress() {
   } catch (_) {}
   // The old version stored a position, not a viewed-list history. Do not
   // falsely label earlier lists as viewed just because the index is high.
-  return { activePackId: 'pack-1', positions: { 'pack-1': legacyIndex }, viewed: {} };
+  return { activePackId: 'pack-1', positions: { 'pack-1': legacyIndex }, viewed: {}, tally: 0 };
 }
 
 function saveProgress() {

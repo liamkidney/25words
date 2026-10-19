@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="25 Words">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f29d92"/>
+      <stop offset="47%" stop-color="#d8a0d8"/>
+      <stop offset="100%" stop-color="#849fe3"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <path d="M77 0H1182V283H565V285L844 522C1048 692 1177 829 1177 1045C1177 1333 947 1514 629 1514C284 1514 67 1300 67 965H397C397 1134 488 1232 629 1232C758 1232 842 1150 842 1026C842 891 739 809 630 716L77 257Z" transform="translate(76.45664 362.18768) scale(0.142438 -0.142438)" fill="#fff"/>
+  <path d="M623 -23C969 -23 1197 198 1197 507C1197 793 961 1012 694 1012C577 1012 478 976 409 906H407L431 1205H1107V1490H115L71 610H395C424 696 510 750 628 750C764 750 858 645 858 497C858 350 764 248 625 248C490 248 389 341 385 468H50C67 168 292 -23 623 -23Z" transform="translate(255.50147 362.18768) scale(0.142438 -0.142438)" fill="#fff"/>
+</svg>

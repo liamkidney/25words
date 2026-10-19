@@ -20,7 +20,10 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     const client = readFileSync(join(output, 'cache.js'), 'utf8');
 
     assert.match(html, /src="\.\/app\.js\?v=1abcde99"/);
-    assert.match(html, /href="\.\/favicon\.svg\?v=1abcde99"/);
+    assert.match(html, /href="\.\/favicon-32\.png\?v=1abcde99"/);
+    assert.match(html, /href="\.\/icon\.svg\?v=1abcde99"/);
+    assert.match(html, /href="\.\/apple-touch-icon\.png\?v=1abcde99"/);
+    assert.match(html, /href="\.\/manifest\.json\?v=1abcde99"/);
     assert.match(html, /src="\.\/cache\.js\?v=1abcde99" data-cache-manager/);
     assert.match(html, /dev · 1abcde99/);
     assert.match(worker, /const CHANNEL = 'dev'/);
@@ -30,9 +33,25 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     assert.match(client, /updateViaCache: 'none'/);
     assert.match(client, /controllerchange/);
     assert.ok(existsSync(join(output, 'app.js')));
-    assert.ok(existsSync(join(output, 'favicon.svg')));
-    assert.match(readFileSync(join(output, 'favicon.svg'), 'utf8'), /<linearGradient id="bg"/);
-    assert.match(worker, /favicon\.svg\?v=' \+ REVISION/);
+    const iconSvg = readFileSync(join(output, 'icon.svg'), 'utf8');
+    assert.match(iconSvg, /<linearGradient id="bg"/);
+    assert.match(iconSvg, /stop-color="#849fe3"/);
+    const manifest = JSON.parse(readFileSync(join(output, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.id, '/25words/dev/');
+    assert.equal(manifest.icons.length, 3);
+    assert.match(manifest.icons[0].src, /\?v=1abcde99$/);
+    for (const [file, size] of [
+      ['favicon-32.png', 32],
+      ['apple-touch-icon.png', 180],
+      ['icon-192.png', 192],
+      ['icon-512.png', 512]
+    ]) {
+      const png = readFileSync(join(output, file));
+      assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', file + ' PNG signature');
+      assert.equal(png.readUInt32BE(16), size, file + ' width');
+      assert.equal(png.readUInt32BE(20), size, file + ' height');
+      assert.match(worker, new RegExp(file.replace('.', '\\.') + '\\\?v='));
+    }
   } finally {
     rmSync(output, { recursive: true, force: true });
   }

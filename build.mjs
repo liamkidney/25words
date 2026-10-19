@@ -21,7 +21,9 @@ if (hasAppJs) {
   html = html.replace('src="./app.js"', 'src="./app.js?v=' + revision + '"');
 }
 if (channel === 'dev') {
-  html = html.replace('href="./favicon.svg"', 'href="./favicon.svg?v=' + revision + '"');
+  // As in Blocks, revision-stamp every icon/manifest reference so a new
+  // deployment cannot accidentally reuse old Safari or browser icon URLs.
+  html = html.replace(/\?v=[\w-]+/g, '?v=' + revision);
 }
 html = html.replace('</head>',
   '  <script src="./cache.js?v=' + revision + '" data-cache-manager defer></script>\n</head>');
@@ -38,7 +40,43 @@ await mkdir(output, { recursive: true });
 await Promise.all([
   writeFile(join(output, 'index.html'), html),
   copyFile('cache.js', join(output, 'cache.js')),
-  ...(channel === 'dev' ? [copyFile('favicon.svg', join(output, 'favicon.svg'))] : []),
+
   writeFile(join(output, 'sw.js'), worker),
   ...(hasAppJs ? [copyFile('app.js', join(output, 'app.js'))] : [])
 ]);
+
+if (channel === 'dev') {
+  // The SVG is the single source of truth; generate pixel icons rather than
+  // relying on iOS Safari (or Add to Home Screen) to understand SVG favicons.
+  const { Resvg } = await import('@resvg/resvg-js');
+  const iconSvg = await readFile('icon.svg', 'utf8');
+  const sizes = [
+    ['favicon-32.png', 32],
+    ['apple-touch-icon.png', 180],
+    ['icon-192.png', 192],
+    ['icon-512.png', 512]
+  ];
+  const icons = sizes.map(([name, size]) =>
+    writeFile(join(output, name), new Resvg(iconSvg, { fitTo: { mode: 'width', value: size } }).render().asPng())
+  );
+  const manifest = {
+    name: '25 Words Dev',
+    short_name: '25 Words',
+    id: '/25words/dev/',
+    start_url: './',
+    scope: './',
+    display: 'standalone',
+    background_color: '#f7f7f5',
+    theme_color: '#d8a0d8',
+    icons: [
+      { src: 'icon-192.png?v=' + revision, sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: 'icon-512.png?v=' + revision, sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: 'icon.svg?v=' + revision, sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
+    ]
+  };
+  await Promise.all([
+    copyFile('icon.svg', join(output, 'icon.svg')),
+    writeFile(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n'),
+    ...icons
+  ]);
+}

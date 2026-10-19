@@ -500,7 +500,7 @@ test('iOS uses automatic status-bar colour and the changing page backdrop', asyn
   assert.match(html, /viewport-fit=cover/);
   assert.doesNotMatch(html, /apple-mobile-web-app-status-bar-style/);
   assert.doesNotMatch(html, /<meta name="theme-color"/);
-  assert.match(html, /:root \\{ color-scheme: light; background-color: #f4a59b; \\}/);
+  assert.ok(html.includes(':root { color-scheme: light; background-color: #f4a59b; }'));
   const {elements,document} = await runApp();
   const expectBackground = colour => {
     assert.equal(document.documentElement.style.backgroundColor, colour);

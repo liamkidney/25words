@@ -88,16 +88,33 @@
     #counter { color: #263f49; font-size: 1.4rem; font-weight: 620; line-height: 1.2; letter-spacing: -.025em; }
     #viewed-indicator { font-size: .75rem; font-weight: 650; color: #51646d; background: #e7eded; border-radius: 20px; padding: 6px 11px; white-space: nowrap; margin-bottom: 2px; }
     /* Reserve the same space whether the list is hidden or revealed. */
-    .word-stage { position: relative; height: clamp(220px, 31dvh, 265px); }
+    .word-stage { position: relative; height: clamp(220px, 31dvh, 265px); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     #words {
       position: absolute;
       inset: 0;
       margin: 0;
-      padding-left: 28px;
-      columns: 2;
-      line-height: 2.65;
-      font-size: 1.08rem;
-      overflow-y: auto;
+      padding: 12px 13px 12px 32px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(5, minmax(0, 1fr));
+      grid-auto-flow: column;
+      column-gap: 12px;
+      align-items: stretch;
+      line-height: 1.3;
+      font-size: clamp(.79rem, 1.85dvh, 1rem);
+      overflow: hidden;
+      pointer-events: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #words li {
+      min-width: 0;
+      min-height: 0;
+      align-content: center;
+      overflow-wrap: anywhere;
+      -webkit-user-select: none;
+      user-select: none;
     }
     .reveal-cover {
       position: absolute;
@@ -129,8 +146,43 @@
       border-color: transparent;
       color: transparent;
     }
-    #words { user-select: none; -webkit-user-select: none; }
-    #next { width: 100%; min-height: 53px; border: 0; border-radius: 12px; background: #263f49; color: #fff; font-size: 1rem; padding: 15px; cursor: pointer; margin-top: 16px; }
+    #next {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 60px;
+      margin-top: 18px;
+      padding: 15px 60px;
+      border: 1px solid #ffffff20;
+      border-radius: 15px;
+      background: linear-gradient(125deg, #345661, #203b46);
+      color: #fff;
+      font: inherit;
+      font-size: 1.06rem;
+      font-weight: 620;
+      letter-spacing: .005em;
+      box-shadow: 0 6px 17px #263f4930, inset 0 1px 0 #ffffff27;
+      cursor: pointer;
+      transition: transform 130ms ease, box-shadow 130ms ease, filter 130ms ease;
+    }
+    #next:hover:not(:disabled) { filter: brightness(1.065); }
+    #next:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 3px 9px #263f4930; }
+    .next-arrow {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #ffffff1f;
+      border: 1px solid #ffffff26;
+    }
+    .next-arrow svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
     button:disabled { opacity: .4; cursor: default; }
     #status { font-size: .85rem; color: #697178; margin-top: 14px; }
     #status:empty { display: none; }
@@ -201,6 +253,7 @@
     @media (prefers-reduced-motion: reduce) {
       .round-backdrop-layer { transition: none; }
       .tap-number.animate, .tap-ghost { animation: none; }
+      #next { transition: none; }
     }
   </style>
   <script src="./app.js" defer></script>
@@ -241,7 +294,7 @@
       <ol id="words" hidden></ol>
       <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Press and hold to reveal words" aria-pressed="false" hidden></button>
     </div>
-    <button id="next" disabled>Next list →</button>
+    <button id="next" type="button" disabled><span id="next-label">Next list</span><span class="next-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></svg></span></button>
     <div id="status" role="status" aria-live="polite"></div>
   </main>
   </div>

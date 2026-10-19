@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#d8a0d8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4a59b">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="25 Words">
   <link rel="manifest" href="./manifest.json?v=2">
@@ -16,10 +17,13 @@
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #efb1aa;
+      background: #f4a59b;
       color: #1d2427;
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
       display: grid;
       place-items: center;
     }
@@ -38,15 +42,16 @@
       transition: opacity 850ms ease-in-out;
     }
     .app-layout { position: relative; z-index: 1; width: min(440px, calc(100% - 48px)); display: flex; flex-direction: column; align-items: stretch; }
-    .tap-counter { height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #263f49; }
+    .tap-counter { position: relative; height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #263f49; }
     .tap-count { width: 100%; flex: 1; display: grid; place-items: center; position: relative; border: 0; background: transparent; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .tap-number { font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; font-variant-numeric: tabular-nums; }
     .tap-number.animate { animation: number-enter 260ms ease-out both; }
     .tap-ghost { position: absolute; font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; pointer-events: none; animation: number-float 320ms ease-out forwards; }
-    .tap-controls { display: flex; justify-content: center; gap: 24px; padding-bottom: 12px; }
+    .tap-controls { position: absolute; left: calc(50% - 50vw + 8px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; justify-content: center; gap: 10px; }
     .tap-control { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #263f49; opacity: .72; display: grid; place-items: center; cursor: pointer; }
     .tap-control svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .tap-control:disabled { opacity: .24; }
+    @media (min-width: 600px) { .tap-controls { left: 6px; } }
     .tap-control:focus-visible, .tap-count:focus-visible { outline: 3px solid #263f49; outline-offset: 2px; }
     @keyframes number-float { from { opacity: .7; transform: translateY(0); } to { opacity: 0; transform: translateY(-32px); } }
     @keyframes number-enter { from { opacity: .2; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

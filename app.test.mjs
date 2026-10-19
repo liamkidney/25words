@@ -246,3 +246,24 @@ test('saved list position recreates same colour; finishing does not shift',async
   assert.equal(final.elements['round-backdrop-a'].style.backgroundImage,colour);
   assert.equal(final.elements['round-backdrop-b'].style.opacity,'0');
 });
+
+test('word stage reserves a fixed area independent of revealing content',()=>{
+  assert.match(html,/\.word-stage\s*\{\s*position:\s*relative;\s*height:\s*260px;\s*\}/);
+  assert.match(html,/#words\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow-y:\s*auto;/s);
+  assert.match(html,/\.reveal-cover\s*\{[^}]*position:\s*absolute;[^}]*height:\s*100%;/s);
+  assert.doesNotMatch(html,/\.word-stage\s*\{[^}]*min-height:/);
+});
+
+test('round gradients have stronger pastel colours and remain distinctive', async()=>{
+  const {elements}=await runApp();
+  const gradients=[];
+  for(let i=0;i<8;i++){
+    if(i>0) elements.next.dispatch('click');
+    const layer=elements['round-backdrop-'+(i%2===0?'a':'b')];
+    gradients.push(layer.style.backgroundImage);
+    assert.match(layer.style.backgroundImage,/linear-gradient\(135deg, #[a-f\d]{6} 0%/);
+  }
+  assert.equal(new Set(gradients).size,8);
+  assert.match(gradients[0],/#f4a59b/);
+  assert.match(gradients[4],/#e99fc6/);
+});

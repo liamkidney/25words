@@ -9,7 +9,7 @@
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f6e7e2;
+      background: #efb1aa;
       color: #1d2427;
       margin: 0;
       min-height: 100vh;
@@ -43,13 +43,23 @@
     .header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 12px; }
     h1 { font-size: 1.55rem; line-height: 1.2; margin: 0; }
     #counter { color: #697178; font-size: .9rem; margin: 8px 0 22px; }
-    .word-stage { position: relative; min-height: 220px; }
-    #words { margin: 0; padding-left: 28px; columns: 2; line-height: 2.65; font-size: 1.08rem; }
+    /* Reserve the same space whether the list is hidden or revealed. */
+    .word-stage { position: relative; height: 260px; }
+    #words {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      padding-left: 28px;
+      columns: 2;
+      line-height: 2.65;
+      font-size: 1.08rem;
+      overflow-y: auto;
+    }
     .reveal-cover {
       position: absolute;
       inset: 0;
       width: 100%;
-      min-height: 220px;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;

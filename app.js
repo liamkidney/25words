@@ -18,17 +18,17 @@ const backdropLayers = [
   document.getElementById('round-backdrop-b')
 ];
 
-// Deliberately varied pastels. Each list has a repeatable palette, so Next
+// Richer but still soft gradients. Each list has a repeatable palette, so Next
 // and direct selection reliably show a different backdrop from the last list.
 const roundGradients = [
-  'linear-gradient(135deg, #f9dcd3 0%, #fcebe0 55%, #efe0f4 100%)', // peach
-  'linear-gradient(135deg, #deddf7 0%, #e3e8fb 55%, #dbeefa 100%)', // lilac blue
-  'linear-gradient(135deg, #d8eee5 0%, #e6f4df 55%, #ebf4da 100%)', // sage
-  'linear-gradient(135deg, #fff0c8 0%, #ffe4ca 52%, #f7dce2 100%)', // butter
-  'linear-gradient(135deg, #f6dce8 0%, #f8e7f0 55%, #e9dcf5 100%)', // blush
-  'linear-gradient(135deg, #d9ecf5 0%, #d9f0ed 55%, #e6f1e3 100%)', // sea glass
-  'linear-gradient(135deg, #eadcf7 0%, #f1e0ef 55%, #f9e9dc 100%)', // orchid
-  'linear-gradient(135deg, #e0eaff 0%, #eae9f7 55%, #f6eed4 100%)'  // periwinkle
+  'linear-gradient(135deg, #f4a59b 0%, #f7c4a4 55%, #d4b1e9 100%)', // peach coral
+  'linear-gradient(135deg, #a7b9f5 0%, #b7d8f3 55%, #b5cae9 100%)', // lilac blue
+  'linear-gradient(135deg, #91d1bb 0%, #b9e3a4 55%, #d7d997 100%)', // sage mint
+  'linear-gradient(135deg, #f8d37e 0%, #f4b2a4 52%, #edadc5 100%)', // butter coral
+  'linear-gradient(135deg, #e99fc6 0%, #eab8da 55%, #cab2ee 100%)', // blush
+  'linear-gradient(135deg, #91cee2 0%, #93dbc8 55%, #b5d9b1 100%)', // sea glass
+  'linear-gradient(135deg, #c2a3e9 0%, #dda8d0 55%, #f2c09d 100%)', // orchid
+  'linear-gradient(135deg, #9cbfed 0%, #bec0ee 55%, #e8ce9f 100%)'  // periwinkle
 ];
 let currentBackdropLayer = 0;
 let lastBackgroundIndex = null;

@@ -420,3 +420,69 @@ test('tally starts at zero, increments, subtracts and resets with background upd
   undo.dispatch('click');
   assert.equal(number.textContent, '0');
 });
+
+test('tally persists with viewed lists and active list position across restart', async () => {
+  const first = await runApp();
+  first.elements['tap-count'].dispatch('click');
+  first.elements['tap-count'].dispatch('click');
+  first.elements['tap-count'].dispatch('click');
+  first.elements['reveal-cover'].dispatch('pointerdown', {pointerId: 17, pointerType: 'touch'});
+  first.elements['reveal-cover'].dispatch('pointerup', {pointerId: 17});
+  first.elements.next.dispatch('click');
+
+  const savedProgress = JSON.parse(first.store.get('25words-progress-v2'));
+  assert.equal(savedProgress.tally, 3);
+  assert.equal(savedProgress.positions['pack-1'], 1);
+  assert.deepEqual(savedProgress.viewed['pack-1'], ['list_1']);
+
+  const second = await runApp({savedProgress});
+  assert.equal(second.elements['tap-number'].textContent, '3');
+  assert.equal(second.elements['tap-undo'].disabled, false);
+  assert.equal(second.elements['tap-reset'].disabled, false);
+  assert.equal(second.elements.counter.textContent, 'Pack 1 · List 2 of 100');
+  assert.equal(second.elements['list-options'].children[0].getAttribute('data-viewed'), 'true');
+  // Restoring does not mutate the previously saved progress.
+  assert.equal(JSON.parse(second.store.get('25words-progress-v2')).tally, 3);
+
+  second.elements['tap-undo'].dispatch('click');
+  assert.equal(JSON.parse(second.store.get('25words-progress-v2')).tally, 2);
+  second.elements['tap-reset'].dispatch('click');
+  assert.equal(JSON.parse(second.store.get('25words-progress-v2')).tally, 0);
+
+  const third = await runApp({savedProgress: JSON.parse(second.store.get('25words-progress-v2'))});
+  assert.equal(third.elements['tap-number'].textContent, '0');
+  assert.equal(third.elements.counter.textContent, 'Pack 1 · List 2 of 100');
+  assert.equal(third.elements['list-options'].children[0].getAttribute('data-viewed'), 'true');
+});
+
+test('older saved progress and invalid saved tallies default to zero without losing list progress', async () => {
+  const base = {activePackId: 'pack-1', positions: {'pack-1': 21}, viewed: {'pack-1': ['list_1']}};
+  for (const tally of [undefined, -1, 1.5, '17', null, Number.MAX_SAFE_INTEGER + 1]) {
+    const savedProgress = {...base};
+    if (tally !== undefined) savedProgress.tally = tally;
+    const {elements, store} = await runApp({savedProgress});
+    assert.equal(elements['tap-number'].textContent, '0');
+    assert.equal(elements['tap-undo'].disabled, true);
+    assert.equal(elements.counter.textContent, 'Pack 1 · List 22 of 100');
+    assert.equal(elements['list-options'].children[0].getAttribute('data-viewed'), 'true');
+    assert.equal(JSON.parse(store.get('25words-progress-v2')).tally, 0);
+  }
+});
+
+test('tally is shared across pack selection and persists independently of pack position', async () => {
+  const first = await runApp({secondPack: true});
+  first.elements['tap-count'].dispatch('click');
+  first.elements['tap-count'].dispatch('click');
+  first.elements['menu-toggle'].dispatch('click');
+  first.elements['pack-options'].children[1].dispatch('click');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(first.elements['tap-number'].textContent, '2');
+  first.elements.next.dispatch('click');
+  const saved = JSON.parse(first.store.get('25words-progress-v2'));
+  assert.equal(saved.tally, 2);
+  assert.equal(saved.activePackId, 'pack-2');
+  assert.equal(saved.positions['pack-2'], 1);
+  const restored = await runApp({secondPack: true, savedProgress: saved});
+  assert.equal(restored.elements['tap-number'].textContent, '2');
+  assert.equal(restored.elements.counter.textContent, 'Pack 2 · List 2 of 2');
+});

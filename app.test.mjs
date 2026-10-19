@@ -41,10 +41,11 @@ class FakeElement {
 }
 
 async function runApp({ savedIndex = null, count = 100, failing = false, savedProgress = null, secondPack = false } = {}) {
-  const ids = ['header','pack-label','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b','tap-count','tap-number','tap-undo','tap-reset'];
+  const ids = ['header','pack-label','counter','words','word-stage','reveal-cover','next','next-label','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b','tap-count','tap-number','tap-undo','tap-reset'];
   const elements = Object.fromEntries(ids.map(id => [id,new FakeElement()]));
   elements.header.replaceChildren(elements['menu-toggle'], elements['list-menu']);
   elements['list-menu'].replaceChildren(elements['pack-options'], elements['list-options']);
+  elements['word-stage'].replaceChildren(elements.words, elements['reveal-cover']);
   elements['list-menu'].hidden = true;
   elements.words.hidden = true;
   elements['reveal-cover'].hidden = true;
@@ -59,6 +60,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   document.body = new FakeElement();
   document.createElement = () => new FakeElement();
   document.getElementById = id => elements[id];
+  document.querySelector = selector => selector === '.word-stage' ? elements['word-stage'] : null;
   const store = new Map(savedIndex === null ? [] : [['25words-progress-v1', String(savedIndex)]]);
   if (savedProgress !== null) store.set('25words-progress-v2', JSON.stringify(savedProgress));
   const localStorage = {
@@ -320,11 +322,12 @@ test('saved list position recreates same colour; finishing does not shift',async
   assert.equal(final.elements['round-backdrop-b'].style.opacity,'0');
 });
 
-test('word stage reserves a fixed area independent of revealing content',()=>{
-  assert.match(html,/\.word-stage\s*\{\s*position:\s*relative;\s*height:\s*clamp\(220px, 31dvh, 265px\);\s*\}/);
-  assert.match(html,/#words\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*overflow-y:\s*auto;/s);
-  assert.match(html,/\.reveal-cover\s*\{[^}]*position:\s*absolute;[^}]*height:\s*100%;/s);
-  assert.doesNotMatch(html,/\.word-stage\s*\{[^}]*min-height:/);
+test('word stage fits ten words in five fixed rows without internal scrolling',()=>{
+  assert.match(html, /\.word-stage\s*\{[^}]*height:\s*clamp\(220px, 31dvh, 265px\);[^}]*touch-action:\s*none;/s);
+  assert.match(html, /#words\s*\{[^}]*display:\s*grid;[^}]*grid-template-rows:\s*repeat\(5, minmax\(0, 1fr\)\);/s);
+  assert.match(html, /#words\s*\{[^}]*grid-auto-flow:\s*column;[^}]*overflow:\s*hidden;/s);
+  assert.match(html, /#words li\s*\{[^}]*overflow-wrap:\s*anywhere;/s);
+  assert.match(html, /\.reveal-cover\s*\{[^}]*position:\s*absolute;[^}]*height:\s*100%;/s);
 });
 
 test('round gradients have stronger pastel colours and remain distinctive', async()=>{
@@ -538,4 +541,38 @@ test('iOS uses automatic status-bar colour and the changing page backdrop', asyn
   expectBackground('#a7b9f5');
   elements['tap-reset'].dispatch('click');
   expectBackground('#a7b9f5');
+});
+
+test('reveal target prevents iOS long-press selection and callouts', async () => {
+  const {elements, document, window}=await runApp();
+  const cover=elements['reveal-cover'];
+  let prevented=0;
+  cover.dispatch('touchstart', {preventDefault:()=>prevented++});
+  cover.dispatch('touchmove', {preventDefault:()=>prevented++});
+  elements['word-stage'].dispatch('contextmenu', {preventDefault:()=>prevented++});
+  assert.equal(prevented,3);
+  let cleared=0;
+  window.getSelection=()=>({
+    isCollapsed:false,
+    anchorNode: elements.words,
+    focusNode: elements.words,
+    removeAllRanges:()=>cleared++
+  });
+  document.dispatch('selectionchange');
+  assert.equal(cleared,1);
+  window.getSelection=()=>({isCollapsed:false,anchorNode:document.body,focusNode:document.body,removeAllRanges:()=>cleared++});
+  document.dispatch('selectionchange');
+  assert.equal(cleared,1);
+});
+
+test('Next list has stable icon styling and updates the label only', async () => {
+  assert.match(html, /id="next-label">Next list<\/span>/);
+  assert.match(html, /class="next-arrow" aria-hidden="true"/);
+  assert.match(html, /#next\s*\{[^}]*linear-gradient\(125deg, #345661, #203b46\);/s);
+  const {elements}=await runApp({count:2});
+  assert.equal(elements['next-label'].textContent,'Next list');
+  elements.next.dispatch('click');
+  assert.equal(elements['next-label'].textContent,'Finish');
+  elements.next.dispatch('click');
+  assert.equal(elements.next.disabled,true);
 });

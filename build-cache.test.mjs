@@ -59,3 +59,26 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     rmSync(output, { recursive: true, force: true });
   }
 });
+
+
+test('a single source build produces complete dev PWA assets and branding', () => {
+  const output = mkdtempSync(join(tmpdir(), '25words-dev-build-'));
+  try {
+    execFileSync(process.execPath, ['build.mjs'], {
+      cwd: root,
+      env: { ...process.env, SITE_OUT: output, SITE_REVISION: '1234abcd', SITE_CHANNEL: 'dev' }
+    });
+    const html = readFileSync(join(output, 'index.html'), 'utf8');
+    const manifest = JSON.parse(readFileSync(join(output, 'manifest.json'), 'utf8'));
+    assert.match(html, /name="apple-mobile-web-app-title" content="25 Words Dev"/);
+    assert.match(html, /src="\.\/app\.js\?v=1234abcd"/);
+    assert.equal(manifest.name, '25 Words Dev');
+    assert.equal(manifest.id, '/25words/dev/');
+    for (const icon of ['favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png']) {
+      assert.ok(existsSync(join(output, icon)), icon);
+    }
+    assert.match(readFileSync(join(output, 'sw.js'), 'utf8'), /const CHANNEL = 'dev'/);
+  } finally {
+    rmSync(output, { recursive: true, force: true });
+  }
+});

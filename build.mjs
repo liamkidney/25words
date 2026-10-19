@@ -70,7 +70,6 @@ await Promise.all([
     scope: './',
     display: 'standalone',
     background_color: '#f7f7f5',
-    theme_color: '#f4a59b',
     icons: [
       { src: 'icon-192.png?v=' + revision, sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: 'icon-512.png?v=' + revision, sizes: '512x512', type: 'image/png', purpose: 'any' },

@@ -40,6 +40,9 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     assert.equal(manifest.id, '/25words/');
     assert.equal(manifest.name, '25 Words');
     assert.equal(manifest.short_name, '25 Words');
+    assert.equal(Object.hasOwn(manifest, 'theme_color'), false,
+      'An install-time theme colour must not freeze the changing status-bar colour');
+    assert.doesNotMatch(html, /apple-mobile-web-app-status-bar-style|<meta name="theme-color"/);
     assert.match(html, /name="apple-mobile-web-app-title" content="25 Words"/);
     assert.equal(manifest.icons.length, 3);
     assert.match(manifest.icons[0].src, /\?v=1abcde99$/);

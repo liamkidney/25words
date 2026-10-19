@@ -2,7 +2,8 @@
 
 const URL = 'https://psoncybkfsdmjksyrcvv.supabase.co';
 const KEY = 'sb_publishable_z-Aumyx5v_WMPTbY77u88A_H3oEEzFH';
-const storageKey = '25words-progress-v1';
+const storageKey = '25words-progress-v2';
+const legacyStorageKey = '25words-progress-v1';
 
 const header = document.getElementById('header');
 const counter = document.getElementById('counter');
@@ -13,6 +14,9 @@ const status = document.getElementById('status');
 const menuToggle = document.getElementById('menu-toggle');
 const listMenu = document.getElementById('list-menu');
 const listOptions = document.getElementById('list-options');
+const packOptions = document.getElementById('pack-options');
+const viewedIndicator = document.getElementById('viewed-indicator');
+const viewedCount = document.getElementById('viewed-count');
 const backdropLayers = [
   document.getElementById('round-backdrop-a'),
   document.getElementById('round-backdrop-b')
@@ -31,12 +35,15 @@ const roundGradients = [
   'linear-gradient(135deg, #9cbfed 0%, #bec0ee 55%, #e8ce9f 100%)'  // periwinkle
 ];
 let currentBackdropLayer = 0;
-let lastBackgroundIndex = null;
+let lastBackgroundKey = null;
 
 function updateRoundBackground() {
-  if (index >= lists.length || index === lastBackgroundIndex) return;
-  const gradient = roundGradients[index % roundGradients.length];
-  if (lastBackgroundIndex === null) {
+  if (index >= lists.length) return;
+  const key = activePackId + ':' + index;
+  if (key === lastBackgroundKey) return;
+  const packOffset = Math.max(0, packs.findIndex(pack => pack.id === activePackId)) * 3;
+  const gradient = roundGradients[(index + packOffset) % roundGradients.length];
+  if (lastBackgroundKey === null) {
     backdropLayers[0].style.backgroundImage = gradient;
     backdropLayers[0].style.opacity = '1';
     backdropLayers[1].style.opacity = '0';
@@ -47,11 +54,15 @@ function updateRoundBackground() {
     backdropLayers[currentBackdropLayer].style.opacity = '0';
     currentBackdropLayer = incoming;
   }
-  lastBackgroundIndex = index;
+  lastBackgroundKey = key;
 }
 
+let packs = [];
+let activePackId = null;
 let lists = [];
 let index = 0;
+let requestNumber = 0;
+let progress = readProgress();
 let activePointer = null;
 let activeKey = null;
 
@@ -66,9 +77,79 @@ function hideWords() {
 function showWords() {
   if (index >= lists.length) return;
   words.hidden = false;
+  markViewed();
   // Never hide the cover element while held: it must keep receiving pointerup.
   revealCover.setAttribute('data-revealing', 'true');
   revealCover.setAttribute('aria-pressed', 'true');
+}
+
+
+function readProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey));
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+      return {
+        activePackId: typeof saved.activePackId === 'string' ? saved.activePackId : 'pack-1',
+        positions: saved.positions && typeof saved.positions === 'object' ? saved.positions : {},
+        viewed: saved.viewed && typeof saved.viewed === 'object' ? saved.viewed : {}
+      };
+    }
+  } catch (_) { /* Old or malformed progress must not break the game. */ }
+  let legacyIndex = 0;
+  try {
+    const value = Number(localStorage.getItem(legacyStorageKey));
+    if (Number.isSafeInteger(value) && value >= 0) legacyIndex = value;
+  } catch (_) {}
+  // The old version stored a position, not a viewed-list history. Do not
+  // falsely label earlier lists as viewed just because the index is high.
+  return { activePackId: 'pack-1', positions: { 'pack-1': legacyIndex }, viewed: {} };
+}
+
+function saveProgress() {
+  try { localStorage.setItem(storageKey, JSON.stringify(progress)); } catch (_) {
+    // Safari private browsing or storage restrictions should not stop gameplay.
+  }
+}
+
+function savePosition() {
+  if (activePackId === null) return;
+  progress.activePackId = activePackId;
+  progress.positions[activePackId] = index;
+  saveProgress();
+}
+
+function activePack() {
+  return packs.find(pack => pack.id === activePackId);
+}
+
+function hasViewed(list) {
+  const viewed = progress.viewed[activePackId];
+  return Array.isArray(viewed) && viewed.includes(list.id);
+}
+
+function updateViewedUI() {
+  for (const [position, choice] of Array.from(listOptions.children).entries()) {
+    const list = lists[position];
+    const viewed = hasViewed(list);
+    if (position === index) choice.setAttribute('aria-current', 'true');
+    else choice.removeAttribute('aria-current');
+    if (viewed) choice.setAttribute('data-viewed', 'true');
+    else choice.removeAttribute('data-viewed');
+    choice.setAttribute('aria-label', 'Go to list ' + list.sequence + (viewed ? ', viewed' : ', not viewed'));
+  }
+  const viewedTotal = lists.filter(hasViewed).length;
+  viewedCount.textContent = viewedTotal + ' of ' + lists.length + ' viewed';
+  viewedIndicator.hidden = index >= lists.length || !hasViewed(lists[index]);
+}
+
+function markViewed() {
+  if (index >= lists.length) return;
+  const list = lists[index];
+  if (hasViewed(list)) return;
+  if (!Array.isArray(progress.viewed[activePackId])) progress.viewed[activePackId] = [];
+  progress.viewed[activePackId].push(list.id);
+  saveProgress();
+  updateViewedUI();
 }
 
 function setMenuOpen(open) {
@@ -83,30 +164,23 @@ function setMenuOpen(open) {
   }
 }
 
-function savePosition() {
-  localStorage.setItem(storageKey, String(index));
-}
-
 function render() {
   hideWords();
   updateRoundBackground();
-  for (const [position, choice] of Array.from(listOptions.children).entries()) {
-    if (position === index) choice.setAttribute('aria-current', 'true');
-    else choice.removeAttribute('aria-current');
-  }
+  updateViewedUI();
 
   if (index >= lists.length) {
-    counter.textContent = 'All lists completed';
+    counter.textContent = activePack().title + ' · All lists completed';
     words.replaceChildren();
     words.hidden = true;
     revealCover.hidden = true;
     next.disabled = true;
-    status.textContent = 'You have finished all available lists.';
+    status.textContent = 'You have finished all available lists in this pack.';
     return;
   }
 
   const list = lists[index];
-  counter.textContent = 'List ' + list.sequence + ' of ' + lists.length;
+  counter.textContent = activePack().title + ' · List ' + list.sequence + ' of ' + lists.length;
   words.replaceChildren(...list.words.map(word => {
     const item = document.createElement('li');
     item.textContent = word;
@@ -120,6 +194,7 @@ function render() {
 }
 
 function selectList(position) {
+  if (!Number.isInteger(position) || position < 0 || position >= lists.length) return;
   index = position;
   savePosition();
   render();
@@ -133,11 +208,73 @@ function buildListSelector() {
     choice.type = 'button';
     choice.className = 'list-choice';
     choice.textContent = String(list.sequence);
-    choice.setAttribute('aria-label', 'Go to list ' + list.sequence);
     choice.addEventListener('click', () => selectList(position));
     return choice;
   }));
+  updateViewedUI();
   menuToggle.disabled = false;
+}
+
+function buildPackSelector() {
+  packOptions.replaceChildren(...packs.map(pack => {
+    const choice = document.createElement('button');
+    choice.type = 'button';
+    choice.className = 'pack-choice';
+    choice.textContent = pack.title;
+    if (pack.id === activePackId) choice.setAttribute('aria-current', 'true');
+    choice.addEventListener('click', () => {
+      if (pack.id === activePackId) return;
+      loadPack(pack.id).then(ok => {
+        if (ok && !listMenu.hidden && listOptions.firstElementChild) {
+          listOptions.firstElementChild.focus({ preventScroll: true });
+        }
+      });
+    });
+    return choice;
+  }));
+}
+
+async function loadPack(packId) {
+  const pack = packs.find(p => p.id === packId);
+  if (!pack) return false;
+  const thisRequest = ++requestNumber;
+  const oldMenuDisabled = menuToggle.disabled;
+  menuToggle.disabled = true;
+  next.disabled = true;
+  status.textContent = 'Loading ' + pack.title + '…';
+  try {
+    const query = '/rest/v1/twentyfive_pack_entries?select=position,twentyfive_word_lists(id,words)' +
+      '&pack_id=eq.' + encodeURIComponent(packId) + '&order=position.asc';
+    const response = await fetch(URL + query, { headers: { apikey: KEY } });
+    if (!response.ok) throw new Error('Database error ' + response.status);
+    const rows = await response.json();
+    const loaded = rows.map(row => ({
+      id: row.twentyfive_word_lists?.id,
+      sequence: row.position,
+      words: row.twentyfive_word_lists?.words
+    }));
+    if (!loaded.length || loaded.some(item => !item.id || !Array.isArray(item.words) || item.words.length !== 10)) {
+      throw new Error('No valid word lists found in this pack.');
+    }
+    if (thisRequest !== requestNumber) return false;
+    activePackId = packId;
+    lists = loaded;
+    const storedIndex = Number(progress.positions[packId]);
+    index = Number.isSafeInteger(storedIndex) ? Math.min(Math.max(0, storedIndex), lists.length) : 0;
+    savePosition();
+    buildPackSelector();
+    buildListSelector();
+    render();
+    return true;
+  } catch (error) {
+    if (thisRequest === requestNumber) {
+      menuToggle.disabled = oldMenuDisabled;
+      next.disabled = activePackId === null || index >= lists.length;
+      counter.textContent = activePackId === null ? 'Unable to load lists' : counter.textContent;
+      status.textContent = error.message;
+    }
+    return false;
+  }
 }
 
 revealCover.addEventListener('pointerdown', event => {
@@ -207,18 +344,17 @@ document.addEventListener('pointerdown', event => {
 
 (async () => {
   try {
-    const response = await fetch(URL + '/rest/v1/twentyfive_word_lists?select=id,sequence,words&order=sequence.asc', {
+    const response = await fetch(URL + '/rest/v1/twentyfive_packs?select=id,title,sort_order&order=sort_order.asc', {
       headers: { apikey: KEY }
     });
     if (!response.ok) throw new Error('Database error ' + response.status);
-    lists = await response.json();
-    if (!lists.length) throw new Error('No word lists loaded.');
-    const storedIndex = Number(localStorage.getItem(storageKey)) || 0;
-    index = Math.min(Math.max(0, storedIndex), lists.length);
-    buildListSelector();
-    render();
+    packs = await response.json();
+    if (!packs.length) throw new Error('No packs available.');
+    const preferredId = packs.some(pack => pack.id === progress.activePackId)
+      ? progress.activePackId : packs[0].id;
+    await loadPack(preferredId);
   } catch (error) {
-    counter.textContent = 'Unable to load lists';
+    counter.textContent = 'Unable to load packs';
     status.textContent = error.message;
   }
 })();

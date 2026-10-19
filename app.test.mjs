@@ -38,11 +38,11 @@ class FakeElement {
   contains(node) { return node === this || this.children.some(c => c.contains(node)); }
 }
 
-async function runApp({ savedIndex = null, count = 100, failing = false } = {}) {
-  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','round-backdrop-a','round-backdrop-b'];
+async function runApp({ savedIndex = null, count = 100, failing = false, savedProgress = null, secondPack = false } = {}) {
+  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b'];
   const elements = Object.fromEntries(ids.map(id => [id,new FakeElement()]));
   elements.header.replaceChildren(elements['menu-toggle'], elements['list-menu']);
-  elements['list-menu'].replaceChildren(elements['list-options']);
+  elements['list-menu'].replaceChildren(elements['pack-options'], elements['list-options']);
   elements['list-menu'].hidden = true;
   elements.words.hidden = true;
   elements['reveal-cover'].hidden = true;
@@ -53,6 +53,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false } = {}) 
   document.createElement = () => new FakeElement();
   document.getElementById = id => elements[id];
   const store = new Map(savedIndex === null ? [] : [['25words-progress-v1', String(savedIndex)]]);
+  if (savedProgress !== null) store.set('25words-progress-v2', JSON.stringify(savedProgress));
   const localStorage = {
     getItem(key) { return store.get(key) ?? null; },
     setItem(key, value) { store.set(key, String(value)); }
@@ -62,9 +63,22 @@ async function runApp({ savedIndex = null, count = 100, failing = false } = {}) 
     sequence:i+1,
     words: Array.from({length:10},(_,w)=>'word'+(i+1)+'_'+(w+1))
   }));
-  const fetch = async () => failing
-    ? {ok:false,status:503}
-    : {ok:true,json:async()=>lists};
+  const packs = [{ id:'pack-1', title:'Pack 1', sort_order:1 }];
+  if (secondPack) packs.push({ id:'pack-2', title:'Pack 2', sort_order:2 });
+  const fetch = async url => {
+    if (failing) return {ok:false,status:503};
+    if (url.includes('twentyfive_packs?')) return {ok:true,json:async()=>packs};
+    if (url.includes('twentyfive_pack_entries?')) {
+      const second = url.includes('pack-2');
+      const items = second
+        ? Array.from({length:2},(_,i)=>({id:'extra_'+(i+1),words:Array.from({length:10},(_,w)=>'extra_'+i+'_'+w)}))
+        : lists;
+      return {ok:true,json:async()=>items.map((list,i)=>({
+        position:i+1, twentyfive_word_lists: {id:list.id, words:list.words}
+      }))};
+    }
+    return {ok:false,status:404};
+  };
   const window = new FakeElement();
   runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
@@ -82,7 +96,7 @@ test('menu and reveal button are present and accessible',()=>{
   assert.match(html,/data-revealing="true"/);
   assert.match(html,/<ol id="words" hidden>/);
   assert.match(html,/src=".\/app.js"/);
-  assert.match(script,/twentyfive_word_lists/);
+  assert.match(script,/twentyfive_pack_entries/);
 });
 
 test('menu selects any of 100 lists and saves navigation',async()=>{
@@ -92,9 +106,9 @@ test('menu selects any of 100 lists and saves navigation',async()=>{
   elements['menu-toggle'].dispatch('click');
   assert.equal(elements['list-menu'].hidden,false);
   elements['list-options'].children[26].dispatch('click');
-  assert.equal(elements.counter.textContent,'List 27 of 100');
+  assert.equal(elements.counter.textContent,'Pack 1 · List 27 of 100');
   assert.equal(elements['list-menu'].hidden,true);
-  assert.equal(store.get('25words-progress-v1'),'26');
+  assert.equal(JSON.parse(store.get('25words-progress-v2')).positions['pack-1'],26);
   assert.equal(elements['list-options'].children[26].getAttribute('aria-current'),'true');
 });
 
@@ -192,19 +206,19 @@ test('new list hides words again, including menu jumps',async()=>{
   elements.next.dispatch('click');
   assert.equal(elements.words.hidden,true);
   assert.equal(elements['reveal-cover'].hidden,false);
-  assert.equal(store.get('25words-progress-v1'),'1');
+  assert.equal(JSON.parse(store.get('25words-progress-v2')).positions['pack-1'],1);
   elements['reveal-cover'].dispatch('pointerdown',{pointerId:2,pointerType:'touch'});
   assert.equal(elements.words.hidden,false);
   elements['menu-toggle'].dispatch('click');
   elements['list-options'].children[41].dispatch('click');
   assert.equal(elements.words.hidden,true);
   assert.equal(elements['reveal-cover'].hidden,false);
-  assert.equal(elements.counter.textContent,'List 42 of 100');
+  assert.equal(elements.counter.textContent,'Pack 1 · List 42 of 100');
 });
 
 test('restored progress is hidden until tapped; escape closes the menu',async()=>{
   const {elements,document}=await runApp({savedIndex:49});
-  assert.equal(elements.counter.textContent,'List 50 of 100');
+  assert.equal(elements.counter.textContent,'Pack 1 · List 50 of 100');
   assert.equal(elements.words.hidden,true);
   elements['menu-toggle'].dispatch('click');
   document.dispatch('keydown',{key:'Escape'});
@@ -214,19 +228,19 @@ test('restored progress is hidden until tapped; escape closes the menu',async()=
 test('completed lists can be revisited and revealed',async()=>{
   const {elements}=await runApp({savedIndex:99});
   elements.next.dispatch('click');
-  assert.equal(elements.counter.textContent,'All lists completed');
+  assert.equal(elements.counter.textContent,'Pack 1 · All lists completed');
   assert.equal(elements.words.hidden,true);
   assert.equal(elements['reveal-cover'].hidden,true);
   elements['menu-toggle'].dispatch('click');
   elements['list-options'].children[9].dispatch('click');
-  assert.equal(elements.counter.textContent,'List 10 of 100');
+  assert.equal(elements.counter.textContent,'Pack 1 · List 10 of 100');
   assert.equal(elements.words.hidden,true);
   assert.equal(elements['reveal-cover'].hidden,false);
 });
 
 test('load failure does not expose words or enable menu',async()=>{
   const {elements}=await runApp({failing:true});
-  assert.equal(elements.counter.textContent,'Unable to load lists');
+  assert.equal(elements.counter.textContent,'Unable to load packs');
   assert.equal(elements['reveal-cover'].hidden,true);
   assert.equal(elements['menu-toggle'].disabled,true);
 });
@@ -296,4 +310,76 @@ test('round gradients have stronger pastel colours and remain distinctive', asyn
   assert.equal(new Set(gradients).size,8);
   assert.match(gradients[0],/#f4a59b/);
   assert.match(gradients[4],/#e99fc6/);
+});
+
+test('pack selector renders the shared catalogue and viewed lists remain selectable', async () => {
+  const {elements,store} = await runApp();
+  assert.equal(elements['pack-options'].children.length,1);
+  assert.equal(elements['pack-options'].children[0].textContent,'Pack 1');
+  assert.equal(elements['viewed-count'].textContent,'0 of 100 viewed');
+  const cover = elements['reveal-cover'];
+  cover.dispatch('pointerdown',{pointerId:33,pointerType:'touch'});
+  assert.equal(elements['list-options'].children[0].getAttribute('data-viewed'),'true');
+  assert.equal(elements['list-options'].children[0].getAttribute('aria-label'),'Go to list 1, viewed');
+  assert.equal(elements['viewed-indicator'].hidden,false);
+  assert.equal(elements['viewed-count'].textContent,'1 of 100 viewed');
+  cover.dispatch('pointerup',{pointerId:33});
+  elements.next.dispatch('click');
+  assert.equal(elements['viewed-indicator'].hidden,true);
+  assert.equal(elements['list-options'].children[1].getAttribute('data-viewed'),null);
+  elements['menu-toggle'].dispatch('click');
+  elements['list-options'].children[0].dispatch('click');
+  assert.equal(elements.counter.textContent,'Pack 1 · List 1 of 100');
+  assert.equal(elements['viewed-indicator'].hidden,false);
+  assert.deepEqual(JSON.parse(store.get('25words-progress-v2')).viewed['pack-1'],['list_1']);
+});
+
+test('existing position is migrated without inventing previously viewed lists',async()=>{
+  const {elements,store} = await runApp({savedIndex:57});
+  assert.equal(elements.counter.textContent,'Pack 1 · List 58 of 100');
+  assert.equal(elements['viewed-count'].textContent,'0 of 100 viewed');
+  assert.deepEqual(JSON.parse(store.get('25words-progress-v2')).viewed,{});
+});
+
+test('viewed status and position persist in browser storage across restarts',async()=>{
+  const first = await runApp();
+  first.elements['reveal-cover'].dispatch('pointerdown',{pointerId:8,pointerType:'touch'});
+  first.elements['reveal-cover'].dispatch('pointerup',{pointerId:8});
+  first.elements.next.dispatch('click');
+  const savedProgress=JSON.parse(first.store.get('25words-progress-v2'));
+  const second=await runApp({savedProgress});
+  assert.equal(second.elements.counter.textContent,'Pack 1 · List 2 of 100');
+  assert.equal(second.elements['list-options'].children[0].getAttribute('data-viewed'),'true');
+  assert.equal(second.elements['list-options'].children[1].getAttribute('data-viewed'),null);
+});
+
+test('switching packs tracks position and viewed lists independently',async()=>{
+  const {elements,store}=await runApp({secondPack:true});
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:1,pointerType:'touch'});
+  elements['reveal-cover'].dispatch('pointerup',{pointerId:1});
+  elements['menu-toggle'].dispatch('click');
+  elements['pack-options'].children[1].dispatch('click');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(elements.counter.textContent,'Pack 2 · List 1 of 2');
+  assert.equal(elements['viewed-count'].textContent,'0 of 2 viewed');
+  assert.equal(elements['list-options'].children.length,2);
+  elements.next.dispatch('click');
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:2,pointerType:'touch'});
+  elements['reveal-cover'].dispatch('pointerup',{pointerId:2});
+  elements['pack-options'].children[0].dispatch('click');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(elements.counter.textContent,'Pack 1 · List 1 of 100');
+  assert.equal(elements['list-options'].children[0].getAttribute('data-viewed'),'true');
+  const progress=JSON.parse(store.get('25words-progress-v2'));
+  assert.equal(progress.positions['pack-1'],0);
+  assert.equal(progress.positions['pack-2'],1);
+  assert.deepEqual(progress.viewed['pack-1'],['list_1']);
+  assert.deepEqual(progress.viewed['pack-2'],['extra_2']);
+});
+
+test('no user progress is written to Supabase',async()=>{
+  const {elements,store}=await runApp();
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:3,pointerType:'touch'});
+  assert.ok(store.has('25words-progress-v2'));
+  assert.doesNotMatch(script,/method:\s*['"](?:POST|PATCH|PUT|DELETE)/);
 });

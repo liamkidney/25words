@@ -49,7 +49,9 @@
     }
     .header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 12px; }
     h1 { font-size: 1.55rem; line-height: 1.2; margin: 0; }
-    #counter { color: #697178; font-size: .9rem; margin: 8px 0 22px; }
+    .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px; margin: 8px 0 22px; }
+    #counter { color: #697178; font-size: .9rem; }
+    #viewed-indicator { font-size: .72rem; font-weight: 650; color: #51646d; background: #e7eded; border-radius: 20px; padding: 3px 8px; white-space: nowrap; }
     /* Reserve the same space whether the list is hidden or revealed. */
     .word-stage { position: relative; height: 260px; }
     #words {
@@ -133,7 +135,14 @@
     }
     [hidden] { display: none !important; }
     .menu-title { font-size: .9rem; font-weight: 650; margin-bottom: 13px; }
+    .pack-options { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .pack-choice { border: 1px solid #dce3e3; border-radius: 8px; padding: 9px 12px; background: #f5f7f7; color: #263f49; cursor: pointer; font: inherit; font-size: .87rem; }
+    .pack-choice[aria-current="true"] { border-color: #263f49; background: #263f49; color: white; }
+    .pack-choice:focus-visible { outline: 3px solid #87afba; outline-offset: 2px; }
     .list-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+    .menu-summary { color: #708087; font-size: .75rem; margin: -5px 0 10px; }
+    .menu-hint { color: #708087; font-size: .72rem; margin-top: 10px; }
+
     .list-choice {
       min-width: 0;
       min-height: 42px;
@@ -146,6 +155,8 @@
       font-size: .9rem;
       font-variant-numeric: tabular-nums;
     }
+    .list-choice[data-viewed="true"] { background: #e5e8e8; color: #8a9599; }
+    .list-choice[data-viewed="true"]:hover { background: #d8dede; color: #52666e; }
     .list-choice:hover { background: #e6ebec; }
     .list-choice[aria-current="true"], .list-choice[aria-current="true"]:hover { background: #263f49; color: #fff; }
     @media (prefers-reduced-motion: reduce) {
@@ -162,17 +173,21 @@
   <main class="panel">
     <div class="header" id="header">
       <h1>25 Words or Less</h1>
-      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Select a list" aria-controls="list-menu" aria-expanded="false" disabled>
+      <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Select a pack or list" aria-controls="list-menu" aria-expanded="false" disabled>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
       </button>
       <div id="list-menu" class="list-menu" hidden>
+        <div class="menu-title">Choose a pack</div>
+        <div id="pack-options" class="pack-options" role="group" aria-label="Word packs"></div>
         <div class="menu-title">Choose a list</div>
+        <div id="viewed-count" class="menu-summary" aria-live="polite"></div>
         <div id="list-options" class="list-options" role="group" aria-label="Word lists"></div>
+        <div class="menu-hint">Shaded lists have been viewed and can be replayed.</div>
       </div>
     </div>
-    <div id="counter">Loading lists…</div>
+    <div class="progress-row"><div id="counter">Loading lists…</div><span id="viewed-indicator" hidden>Viewed</span></div>
     <div class="word-stage">
       <ol id="words" hidden></ol>
       <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Press and hold to reveal words" aria-pressed="false" hidden>

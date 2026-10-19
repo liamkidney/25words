@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 
@@ -32,6 +33,9 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     assert.match(worker, /CHANNEL === 'prod'/);
     assert.match(client, /updateViaCache: 'none'/);
     assert.match(client, /controllerchange/);
+    assert.match(client, /'_version_check'/);
+    assert.match(client, /window\.location\.replace\(destination\.href\)/);
+    assert.match(worker, /url\.searchParams\.has\('_version_check'\)/);
     assert.ok(existsSync(join(output, 'app.js')));
     const iconSvg = readFileSync(join(output, 'icon.svg'), 'utf8');
     assert.match(iconSvg, /<linearGradient id="bg"/);
@@ -83,5 +87,89 @@ test('a single source build produces complete dev PWA assets and branding', () =
     assert.match(readFileSync(join(output, 'sw.js'), 'utf8'), /const CHANNEL = 'dev'/);
   } finally {
     rmSync(output, { recursive: true, force: true });
+  }
+});
+
+test('iOS resume detects a newer published build and navigates without deleting saved data', async () => {
+  const script = readFileSync(join(root, 'cache.js'), 'utf8');
+  const onWindow = new Map();
+  const onDocument = new Map();
+  const onWorker = new Map();
+  const expectedNew = 'deadbeef';
+  const served = '<script src="./cache.js?v=' + expectedNew + '" data-cache-manager defer></script>';
+  let navigated = '';
+  let registered = '';
+  let updates = 0;
+  const doc = {
+    visibilityState: 'visible',
+    querySelector: () => ({src: 'https://example.com/25words/dev/cache.js?v=1234abcd'}),
+    addEventListener: (name,fn) => onDocument.set(name,fn)
+  };
+  const registration = {
+    scope: 'https://example.com/25words/dev/',
+    update: async () => { updates++; }
+  };
+  const nav = {
+    serviceWorker: {
+      controller: {},
+      addEventListener: (name,fn) => onWorker.set(name,fn),
+      register: async url => { registered=url; return registration; }
+    }
+  };
+  const win = {
+    location: {
+      href: 'https://example.com/25words/dev/',
+      reload: () => { throw Error('Unnecessary reload'); },
+      replace: url => { navigated=url; }
+    },
+    addEventListener: (name,fn) => onWindow.set(name,fn),
+    setInterval: (fn,delay) => { assert.equal(delay,60000); }
+  };
+  const requests = [];
+  const fetch = async (url,options) => {
+    requests.push({url,options});
+    return {ok:true, text: async()=> served};
+  };
+  runInNewContext(script, {window:win,document:doc,navigator:nav,fetch,URL});
+  await onWindow.get('load')();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(registered, './sw.js?v=1234abcd');
+  assert.equal(updates,1);
+  assert.equal(requests.length,1);
+  assert.match(requests[0].url, /_version_check=/);
+  assert.equal(requests[0].options.cache, 'no-store');
+  assert.equal(new URL(navigated).searchParams.get('_app_rev'), expectedNew);
+  assert.equal(new URL(navigated).pathname, '/25words/dev/');
+});
+
+test('offline or unchanged build does not force an app reload', async () => {
+  const script = readFileSync(join(root,'cache.js'),'utf8');
+  for (const offline of [false,true]) {
+    const events={};
+    let reloads=0;
+    const registration={scope:'https://example.com/25words/dev/',update:async()=>{}};
+    const win={
+      location:{href:'https://example.com/25words/dev/',replace:()=>reloads++,reload:()=>reloads++},
+      addEventListener:(event,fn)=>{events[event]=fn},
+      setInterval:()=>{}
+    };
+    const doc={
+      visibilityState:'visible',
+      querySelector:()=>({src:'https://example.com/25words/dev/cache.js?v=1234abcd'}),
+      addEventListener:()=>{}
+    };
+    const nav={serviceWorker:{
+      controller:{},
+      register:async()=>registration,
+      addEventListener:()=>{}
+    }};
+    const fetch=async()=> {
+      if(offline)throw Error('Offline');
+      return {ok:true,text:async()=>'<script src="./cache.js?v=1234abcd" data-cache-manager defer></script>'};
+    };
+    runInNewContext(script,{window:win,document:doc,navigator:nav,fetch,URL});
+    await events.load();
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(reloads,0);
   }
 });

@@ -491,8 +491,8 @@ test('tally is shared across pack selection and persists independently of pack p
 });
 
 test('tally buttons are stacked at the left edge, outside the central counter target', () => {
-  assert.match(html, /\\.tap-counter \\{ position: relative;/);
-  assert.match(html, /\\.tap-controls \\{[^}]*left: calc\\(50% - 50vw \\+ 8px\\);[^}]*flex-direction: column;/);
+  assert.match(html, /\.tap-counter \{ position: relative;/);
+  assert.match(html, /\.tap-controls \{[^}]*left: calc\(50% - 50vw \+ 8px\);[^}]*flex-direction: column;/);
   assert.match(html, /id="tap-undo"[^>]*aria-label="Subtract one"/);
   assert.match(html, /id="tap-reset"[^>]*aria-label="Reset counter to zero"/);
 });
@@ -500,8 +500,8 @@ test('tally buttons are stacked at the left edge, outside the central counter ta
 test('installed iOS PWA can draw the gradient under the status bar', async () => {
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /apple-mobile-web-app-status-bar-style" content="black-translucent"/);
-  assert.match(html, /padding-top: env\\(safe-area-inset-top, 0px\\)/);
-  assert.match(html, /padding-bottom: env\\(safe-area-inset-bottom, 0px\\)/);
+  assert.match(html, /padding-top: env\(safe-area-inset-top, 0px\)/);
+  assert.match(html, /padding-bottom: env\(safe-area-inset-bottom, 0px\)/);
   const {elements,document,themeMeta} = await runApp();
   assert.equal(document.body.style.backgroundColor, '#f4a59b');
   assert.equal(themeMeta.getAttribute('content'), '#f4a59b');

@@ -55,9 +55,8 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   elements['tap-reset'].disabled = true;
 
   const document = new FakeElement();
-  const themeMeta = new FakeElement();
+  document.documentElement = new FakeElement();
   document.body = new FakeElement();
-  document.querySelector = selector => selector === 'meta[name="theme-color"]' ? themeMeta : null;
   document.createElement = () => new FakeElement();
   document.getElementById = id => elements[id];
   const store = new Map(savedIndex === null ? [] : [['25words-progress-v1', String(savedIndex)]]);
@@ -91,7 +90,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   window.matchMedia = () => ({ matches: false });
   runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
-  return {elements,document,window,store,themeMeta};
+  return {elements,document,window,store};
 }
 
 test('menu and reveal button are present and accessible',()=>{
@@ -497,15 +496,23 @@ test('tally buttons are stacked at the left edge, outside the central counter ta
   assert.match(html, /id="tap-reset"[^>]*aria-label="Reset counter to zero"/);
 });
 
-test('installed iOS PWA can draw the gradient under the status bar', async () => {
+test('iOS uses automatic status-bar colour and the changing page backdrop', async () => {
   assert.match(html, /viewport-fit=cover/);
-  assert.match(html, /apple-mobile-web-app-status-bar-style" content="black-translucent"/);
-  assert.match(html, /padding-top: env\(safe-area-inset-top, 0px\)/);
-  assert.match(html, /padding-bottom: env\(safe-area-inset-bottom, 0px\)/);
-  const {elements,document,themeMeta} = await runApp();
-  assert.equal(document.body.style.backgroundColor, '#f4a59b');
-  assert.equal(themeMeta.getAttribute('content'), '#f4a59b');
+  assert.doesNotMatch(html, /apple-mobile-web-app-status-bar-style/);
+  assert.doesNotMatch(html, /<meta name="theme-color"/);
+  assert.match(html, /:root \\{ color-scheme: light; background-color: #f4a59b; \\}/);
+  const {elements,document} = await runApp();
+  const expectBackground = colour => {
+    assert.equal(document.documentElement.style.backgroundColor, colour);
+    assert.equal(document.body.style.backgroundColor, colour);
+  };
+  expectBackground('#f4a59b');
   elements['tap-count'].dispatch('click');
-  assert.equal(document.body.style.backgroundColor, '#a7b9f5');
-  assert.equal(themeMeta.getAttribute('content'), '#a7b9f5');
+  expectBackground('#a7b9f5');
+  elements.next.dispatch('click');
+  expectBackground('#91d1bb');
+  elements['tap-undo'].dispatch('click');
+  expectBackground('#a7b9f5');
+  elements['tap-reset'].dispatch('click');
+  expectBackground('#a7b9f5');
 });

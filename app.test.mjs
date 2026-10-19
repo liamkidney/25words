@@ -15,6 +15,7 @@ class FakeElement {
     this.disabled = false;
     this.textContent = '';
     this.focused = false;
+    this.capturedPointer = null;
   }
   get firstElementChild() { return this.children[0]; }
   replaceChildren(...children) { this.children = children; }
@@ -30,6 +31,7 @@ class FakeElement {
   }
   focus() { this.focused = true; }
   scrollIntoView() {}
+  setPointerCapture(pointerId) { this.capturedPointer = pointerId; }
   contains(node) { return node === this || this.children.some(c => c.contains(node)); }
 }
 
@@ -60,7 +62,8 @@ async function runApp({ savedIndex = null, count = 100, failing = false } = {}) 
   const fetch = async () => failing
     ? {ok:false,status:503}
     : {ok:true,json:async()=>lists};
-  runInNewContext(script,{document,localStorage,fetch});
+  const window = new FakeElement();
+  runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
   return {elements,document,store};
 }
@@ -69,6 +72,8 @@ test('menu and reveal button are present and accessible',()=>{
   assert.match(html,/id="menu-toggle"[^>]+aria-controls="list-menu"/);
   assert.match(html,/id="list-menu"[^>]+hidden/);
   assert.match(html,/id="reveal-cover"[^>]+aria-controls="words"/);
+  assert.match(html,/Press and hold to reveal words/);
+  assert.match(html,/data-revealing="true"/);
   assert.match(html,/<ol id="words" hidden>/);
   assert.match(html,/src=".\/app.js"/);
   assert.match(script,/twentyfive_word_lists/);
@@ -87,24 +92,75 @@ test('menu selects any of 100 lists and saves navigation',async()=>{
   assert.equal(elements['list-options'].children[26].getAttribute('aria-current'),'true');
 });
 
-test('words are covered by default and appear only on reveal',async()=>{
+test('words reveal only while pointer is held, then hide on release',async()=>{
   const {elements}=await runApp();
+  const cover=elements['reveal-cover'];
   assert.equal(elements.words.hidden,true);
-  assert.equal(elements['reveal-cover'].hidden,false);
-  elements['reveal-cover'].dispatch('click');
+  assert.equal(cover.hidden,false);
+  cover.dispatch('pointerdown',{pointerId:7,pointerType:'touch',isPrimary:true});
   assert.equal(elements.words.hidden,false);
-  assert.equal(elements['reveal-cover'].hidden,true);
+  assert.equal(cover.hidden,false);
+  assert.equal(cover.capturedPointer,7);
+  assert.equal(cover.getAttribute('data-revealing'),'true');
+  assert.equal(cover.getAttribute('aria-pressed'),'true');
   assert.equal(elements.words.children.length,10);
+  cover.dispatch('pointerup',{pointerId:7});
+  assert.equal(elements.words.hidden,true);
+  assert.equal(cover.getAttribute('data-revealing'),null);
+  assert.equal(cover.getAttribute('aria-pressed'),'false');
+  cover.dispatch('click'); // A release-generated click must not leave words exposed.
+  assert.equal(elements.words.hidden,true);
+});
+
+test('unrelated pointers, cancelled touch, and lost pointer capture are handled',async()=>{
+  const {elements}=await runApp();
+  const cover=elements['reveal-cover'];
+  cover.dispatch('pointerdown',{pointerId:12,pointerType:'mouse',button:2});
+  assert.equal(elements.words.hidden,true);
+  cover.dispatch('pointerdown',{pointerId:12,pointerType:'touch',isPrimary:true});
+  cover.dispatch('pointerup',{pointerId:24});
+  assert.equal(elements.words.hidden,false);
+  cover.dispatch('pointercancel',{pointerId:12});
+  assert.equal(elements.words.hidden,true);
+  cover.dispatch('pointerdown',{pointerId:13,pointerType:'touch',isPrimary:true});
+  assert.equal(elements.words.hidden,false);
+  cover.dispatch('lostpointercapture',{pointerId:13});
+  assert.equal(elements.words.hidden,true);
+});
+
+test('Space or Enter reveals while held, then hides on keyup or blur',async()=>{
+  const {elements,document,window}=await runApp();
+  const cover=elements['reveal-cover'];
+  let prevented=0;
+  const preventDefault=()=>prevented++;
+  cover.dispatch('keydown',{key:' ',preventDefault});
+  assert.equal(elements.words.hidden,false);
+  cover.dispatch('keyup',{key:' ',preventDefault});
+  assert.equal(elements.words.hidden,true);
+  cover.dispatch('keydown',{key:'Enter',preventDefault});
+  assert.equal(elements.words.hidden,false);
+  window.dispatch('blur');
+  assert.equal(elements.words.hidden,true);
+  cover.dispatch('keydown',{key:'Enter',preventDefault});
+  cover.dispatch('blur');
+  assert.equal(elements.words.hidden,true);
+  cover.dispatch('keydown',{key:' ',preventDefault});
+  document.visibilityState='hidden';
+  document.dispatch('visibilitychange');
+  assert.equal(elements.words.hidden,true);
+  assert.ok(prevented>=3);
 });
 
 test('new list hides words again, including menu jumps',async()=>{
   const {elements,store}=await runApp();
-  elements['reveal-cover'].dispatch('click');
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:1,pointerType:'touch'});
+  assert.equal(elements.words.hidden,false);
   elements.next.dispatch('click');
   assert.equal(elements.words.hidden,true);
   assert.equal(elements['reveal-cover'].hidden,false);
   assert.equal(store.get('25words-progress-v1'),'1');
-  elements['reveal-cover'].dispatch('click');
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:2,pointerType:'touch'});
+  assert.equal(elements.words.hidden,false);
   elements['menu-toggle'].dispatch('click');
   elements['list-options'].children[41].dispatch('click');
   assert.equal(elements.words.hidden,true);

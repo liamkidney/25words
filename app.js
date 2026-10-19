@@ -16,6 +16,24 @@ const listOptions = document.getElementById('list-options');
 
 let lists = [];
 let index = 0;
+let activePointer = null;
+let activeKey = null;
+
+function hideWords() {
+  activePointer = null;
+  activeKey = null;
+  words.hidden = true;
+  revealCover.removeAttribute('data-revealing');
+  revealCover.setAttribute('aria-pressed', 'false');
+}
+
+function showWords() {
+  if (index >= lists.length) return;
+  words.hidden = false;
+  // Never hide the cover element while held: it must keep receiving pointerup.
+  revealCover.setAttribute('data-revealing', 'true');
+  revealCover.setAttribute('aria-pressed', 'true');
+}
 
 function setMenuOpen(open) {
   listMenu.hidden = !open;
@@ -34,6 +52,7 @@ function savePosition() {
 }
 
 function render() {
+  hideWords();
   for (const [position, choice] of Array.from(listOptions.children).entries()) {
     if (position === index) choice.setAttribute('aria-current', 'true');
     else choice.removeAttribute('aria-current');
@@ -84,10 +103,42 @@ function buildListSelector() {
   menuToggle.disabled = false;
 }
 
-revealCover.addEventListener('click', () => {
-  if (index >= lists.length) return;
-  words.hidden = false;
-  revealCover.hidden = true;
+revealCover.addEventListener('pointerdown', event => {
+  if (event.isPrimary === false || (event.pointerType === 'mouse' && event.button !== 0)) return;
+  if (activePointer !== null || activeKey !== null || index >= lists.length) return;
+  activePointer = event.pointerId;
+  // Pointer capture keeps release events attached to the cover even if the
+  // finger moves away from it before the user releases.
+  try { revealCover.setPointerCapture?.(event.pointerId); } catch (_) {}
+  showWords();
+});
+
+function releasePointer(event) {
+  if (activePointer !== null && event.pointerId === activePointer) hideWords();
+}
+revealCover.addEventListener('pointerup', releasePointer);
+revealCover.addEventListener('pointercancel', releasePointer);
+revealCover.addEventListener('lostpointercapture', releasePointer);
+
+revealCover.addEventListener('keydown', event => {
+  if (event.key !== ' ' && event.key !== 'Enter') return;
+  event.preventDefault();
+  if (activeKey === null && activePointer === null && index < lists.length) {
+    activeKey = event.key;
+    showWords();
+  }
+});
+revealCover.addEventListener('keyup', event => {
+  if (event.key === activeKey) {
+    event.preventDefault();
+    hideWords();
+  }
+});
+revealCover.addEventListener('blur', hideWords);
+revealCover.addEventListener('contextmenu', event => event.preventDefault());
+window.addEventListener('blur', hideWords);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') hideWords();
 });
 
 menuToggle.addEventListener('click', () => setMenuOpen(listMenu.hidden));

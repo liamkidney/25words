@@ -47,12 +47,24 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      touch-action: manipulation;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
     .reveal-cover .cover-icon { color: #68818b; font-size: 1.65rem; font-weight: 400; }
     .reveal-cover:hover { background: #e7efef; }
     .reveal-cover:focus-visible { outline: 3px solid #87afba; outline-offset: 3px; }
+    /* Keep the hit target active while held: hiding the button itself would lose pointerup. */
+    .reveal-cover[data-revealing="true"],
+    .reveal-cover[data-revealing="true"]:hover {
+      background: transparent;
+      border-color: transparent;
+      color: transparent;
+    }
+    .reveal-cover[data-revealing="true"] > * { visibility: hidden; }
+    #words { user-select: none; -webkit-user-select: none; }
     #next { width: 100%; border: 0; border-radius: 10px; background: #263f49; color: #fff; font-size: 1rem; padding: 15px; cursor: pointer; margin-top: 16px; }
     button:disabled { opacity: .4; cursor: default; }
     #status { font-size: .85rem; color: #697178; margin-top: 14px; }
@@ -123,9 +135,9 @@
     <div id="counter">Loading lists…</div>
     <div class="word-stage">
       <ol id="words" hidden></ol>
-      <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Reveal this list" hidden>
+      <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Press and hold to reveal words" aria-pressed="false" hidden>
         <span class="cover-icon" aria-hidden="true">◉</span>
-        <span>Tap to reveal words</span>
+        <span>Press and hold to reveal words</span>
       </button>
     </div>
     <button id="next" disabled>Next list →</button>

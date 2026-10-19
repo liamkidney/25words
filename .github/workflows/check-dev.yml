@@ -27,10 +27,20 @@ jobs:
         run: npm install --prefix development --no-audit --no-fund
 
       - name: Validate JavaScript
-        run: node --check development/app.js && node --check development/build.mjs && node --check development/app.test.mjs
+        run: |
+          set -euo pipefail
+          for script in app.js build.mjs cache.js sw.js app.test.mjs build-cache.test.mjs; do
+            node --check "development/$script"
+          done
 
       - name: Run tests
         run: npm test --prefix development
 
       - name: Build validation
-        run: SITE_OUT="$GITHUB_WORKSPACE/dev-build" npm run build --prefix development
+        run: |
+          set -euo pipefail
+          DEV_SHA=$(git -C development rev-parse --short=8 HEAD)
+          SITE_CHANNEL=dev SITE_REVISION="$DEV_SHA" SITE_OUT="$GITHUB_WORKSPACE/dev-build" npm run build --prefix development
+          test -s "$GITHUB_WORKSPACE/dev-build/index.html"
+          test -s "$GITHUB_WORKSPACE/dev-build/sw.js"
+          grep -Fq "app.js?v=$DEV_SHA" "$GITHUB_WORKSPACE/dev-build/index.html"

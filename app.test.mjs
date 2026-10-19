@@ -55,6 +55,9 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   elements['tap-reset'].disabled = true;
 
   const document = new FakeElement();
+  const themeMeta = new FakeElement();
+  document.body = new FakeElement();
+  document.querySelector = selector => selector === 'meta[name="theme-color"]' ? themeMeta : null;
   document.createElement = () => new FakeElement();
   document.getElementById = id => elements[id];
   const store = new Map(savedIndex === null ? [] : [['25words-progress-v1', String(savedIndex)]]);
@@ -88,7 +91,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   window.matchMedia = () => ({ matches: false });
   runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
-  return {elements,document,window,store};
+  return {elements,document,window,store,themeMeta};
 }
 
 test('menu and reveal button are present and accessible',()=>{
@@ -485,4 +488,24 @@ test('tally is shared across pack selection and persists independently of pack p
   const restored = await runApp({secondPack: true, savedProgress: saved});
   assert.equal(restored.elements['tap-number'].textContent, '2');
   assert.equal(restored.elements.counter.textContent, 'Pack 2 · List 2 of 2');
+});
+
+test('tally buttons are stacked at the left edge, outside the central counter target', () => {
+  assert.match(html, /\\.tap-counter \\{ position: relative;/);
+  assert.match(html, /\\.tap-controls \\{[^}]*left: calc\\(50% - 50vw \\+ 8px\\);[^}]*flex-direction: column;/);
+  assert.match(html, /id="tap-undo"[^>]*aria-label="Subtract one"/);
+  assert.match(html, /id="tap-reset"[^>]*aria-label="Reset counter to zero"/);
+});
+
+test('installed iOS PWA can draw the gradient under the status bar', async () => {
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(html, /apple-mobile-web-app-status-bar-style" content="black-translucent"/);
+  assert.match(html, /padding-top: env\\(safe-area-inset-top, 0px\\)/);
+  assert.match(html, /padding-bottom: env\\(safe-area-inset-bottom, 0px\\)/);
+  const {elements,document,themeMeta} = await runApp();
+  assert.equal(document.body.style.backgroundColor, '#f4a59b');
+  assert.equal(themeMeta.getAttribute('content'), '#f4a59b');
+  elements['tap-count'].dispatch('click');
+  assert.equal(document.body.style.backgroundColor, '#a7b9f5');
+  assert.equal(themeMeta.getAttribute('content'), '#a7b9f5');
 });

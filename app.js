@@ -12,6 +12,7 @@ const tapUndo = document.getElementById('tap-undo');
 const tapReset = document.getElementById('tap-reset');
 let tally = 0;
 const counter = document.getElementById('counter');
+const packLabel = document.getElementById('pack-label');
 const words = document.getElementById('words');
 const revealCover = document.getElementById('reveal-cover');
 const next = document.getElementById('next');
@@ -217,9 +218,10 @@ function render() {
   hideWords();
   updateRoundBackground();
   updateViewedUI();
+  packLabel.textContent = activePack().title;
 
   if (index >= lists.length) {
-    counter.textContent = activePack().title + ' · All lists completed';
+    counter.textContent = 'All lists completed';
     words.replaceChildren();
     words.hidden = true;
     revealCover.hidden = true;
@@ -229,7 +231,7 @@ function render() {
   }
 
   const list = lists[index];
-  counter.textContent = activePack().title + ' · List ' + list.sequence + ' of ' + lists.length;
+  counter.textContent = 'List ' + list.sequence + ' of ' + lists.length;
   words.replaceChildren(...list.words.map(word => {
     const item = document.createElement('li');
     item.textContent = word;

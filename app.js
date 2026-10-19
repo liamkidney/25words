@@ -6,6 +6,11 @@ const storageKey = '25words-progress-v2';
 const legacyStorageKey = '25words-progress-v1';
 
 const header = document.getElementById('header');
+const tapCountButton = document.getElementById('tap-count');
+const tapNumber = document.getElementById('tap-number');
+const tapUndo = document.getElementById('tap-undo');
+const tapReset = document.getElementById('tap-reset');
+let tally = 0;
 const counter = document.getElementById('counter');
 const words = document.getElementById('words');
 const revealCover = document.getElementById('reveal-cover');
@@ -39,10 +44,10 @@ let lastBackgroundKey = null;
 
 function updateRoundBackground() {
   if (index >= lists.length) return;
-  const key = activePackId + ':' + index;
+  const key = activePackId + ':' + index + ':' + tally;
   if (key === lastBackgroundKey) return;
   const packOffset = Math.max(0, packs.findIndex(pack => pack.id === activePackId)) * 3;
-  const gradient = roundGradients[(index + packOffset) % roundGradients.length];
+  const gradient = roundGradients[(index + packOffset + tally) % roundGradients.length];
   if (lastBackgroundKey === null) {
     backdropLayers[0].style.backgroundImage = gradient;
     backdropLayers[0].style.opacity = '1';
@@ -56,6 +61,33 @@ function updateRoundBackground() {
   }
   lastBackgroundKey = key;
 }
+
+function changeTally(value) {
+  const nextValue = Math.max(0, value);
+  if (nextValue === tally) return;
+  const previous = tally;
+  tally = nextValue;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  tapNumber.textContent = String(tally);
+  tapUndo.disabled = tally === 0;
+  tapReset.disabled = tally === 0;
+  if (!reducedMotion) {
+    const ghost = document.createElement('span');
+    ghost.className = 'tap-ghost';
+    ghost.textContent = String(previous);
+    ghost.setAttribute('aria-hidden', 'true');
+    tapCountButton.appendChild(ghost);
+    ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
+    tapNumber.classList.remove('animate');
+    void tapNumber.offsetWidth;
+    tapNumber.classList.add('animate');
+  }
+  updateRoundBackground();
+}
+
+tapCountButton.addEventListener('click', () => changeTally(tally + 1));
+tapUndo.addEventListener('click', () => changeTally(tally - 1));
+tapReset.addEventListener('click', () => changeTally(0));
 
 let packs = [];
 let activePackId = null;

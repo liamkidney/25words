@@ -16,6 +16,7 @@ const packLabel = document.getElementById('pack-label');
 const words = document.getElementById('words');
 const revealCover = document.getElementById('reveal-cover');
 const next = document.getElementById('next');
+const nextLabel = document.getElementById('next-label');
 const status = document.getElementById('status');
 const menuToggle = document.getElementById('menu-toggle');
 const listMenu = document.getElementById('list-menu');
@@ -240,7 +241,7 @@ function render() {
   words.hidden = true;
   revealCover.hidden = false;
   next.disabled = false;
-  next.textContent = index === lists.length - 1 ? 'Finish' : 'Next list →';
+  nextLabel.textContent = index === lists.length - 1 ? 'Finish' : 'Next list';
   status.textContent = '';
 }
 
@@ -363,13 +364,28 @@ revealCover.addEventListener('keyup', event => {
 });
 revealCover.addEventListener('blur', hideWords);
 revealCover.addEventListener('contextmenu', event => event.preventDefault());
-// iOS Safari can initiate selection on the revealed words or child spans even
-// when user-select:none is applied. Guard all controls, not just the overlay.
+// iOS Safari may invoke text selection or a callout during a long press even
+// where touch-action and user-select are disabled. Suppress native touch gestures
+// on the reveal target only; keep the other app controls fully interactive.
+for (const type of ['touchstart', 'touchmove']) {
+  revealCover.addEventListener(type, event => event.preventDefault(), { passive: false });
+}
+const wordStage = document.querySelector('.word-stage');
+wordStage.addEventListener('contextmenu', event => event.preventDefault());
 for (const type of ['selectstart', 'dragstart']) {
   document.addEventListener(type, event => {
     if (event.target?.closest?.('.panel')) event.preventDefault();
   });
 }
+// Clear any residual selection Safari creates after the overlay reveals text.
+// Do not let a long-press turn into a text selection that persists on release.
+document.addEventListener('selectionchange', () => {
+  const selection = window.getSelection?.();
+  if (!selection || selection.isCollapsed) return;
+  if (wordStage.contains(selection.anchorNode) || wordStage.contains(selection.focusNode)) {
+    selection.removeAllRanges();
+  }
+});
 window.addEventListener('blur', hideWords);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') hideWords();

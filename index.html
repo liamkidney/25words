@@ -21,9 +21,10 @@
       min-height: 100vh;
       min-height: 100dvh;
       padding-top: env(safe-area-inset-top, 0px);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
-      display: grid;
-      place-items: center;
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      display: flex;
+      justify-content: center;
     }
     /* The outermost background changes between lists; the card stays white. */
     .round-backdrop {
@@ -39,17 +40,25 @@
       opacity: 0;
       transition: opacity 850ms ease-in-out;
     }
-    .app-layout { position: relative; z-index: 1; width: min(440px, calc(100% - 48px)); display: flex; flex-direction: column; align-items: stretch; }
-    .tap-counter { position: relative; height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #263f49; }
+    /* One full-height composition: compact header, flexible counter, bottom sheet. */
+    .app-layout {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 440px);
+      min-height: calc(100dvh - env(safe-area-inset-top, 0px));
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .tap-counter { position: relative; flex: 1 1 auto; min-height: 156px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #263f49; }
     .tap-count { width: 100%; flex: 1; display: grid; place-items: center; position: relative; border: 0; background: transparent; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     .tap-number { font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; font-variant-numeric: tabular-nums; }
     .tap-number.animate { animation: number-enter 260ms ease-out both; }
     .tap-ghost { position: absolute; font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; pointer-events: none; animation: number-float 320ms ease-out forwards; }
-    .tap-controls { position: absolute; left: calc(50% - 50vw + 8px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; justify-content: center; gap: 10px; }
-    .tap-control { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #263f49; opacity: .72; display: grid; place-items: center; cursor: pointer; }
+    .tap-controls { position: absolute; z-index: 2; left: 18px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+    .tap-control { width: 44px; height: 44px; border: 1px solid #ffffff7c; border-radius: 12px; background: #ffffff54; color: #263f49; opacity: .82; display: grid; place-items: center; cursor: pointer; }
     .tap-control svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
     .tap-control:disabled { opacity: .24; }
-    @media (min-width: 600px) { .tap-controls { left: 6px; } }
     .tap-control:focus-visible, .tap-count:focus-visible { outline: 3px solid #263f49; outline-offset: 2px; }
     @keyframes number-float { from { opacity: .7; transform: translateY(0); } to { opacity: 0; transform: translateY(-32px); } }
     @keyframes number-enter { from { opacity: .2; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -58,10 +67,10 @@
       z-index: 1;
       width: 100%;
       background: #fff;
-      border: 1px solid #e5e5e2;
-      border-radius: 16px;
-      padding: 28px;
-      box-shadow: 0 10px 40px #00000008;
+      border-radius: 28px 28px 0 0;
+      padding: 26px 24px calc(22px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 -5px 25px #1d35400b;
+      flex-shrink: 0;
     }
     /* Game controls are pressed and held; text selection and iOS callouts
        must not compete with touch or mouse gestures. */
@@ -70,13 +79,16 @@
       user-select: none;
       -webkit-touch-callout: none;
     }
-    .header { display: flex; align-items: center; justify-content: space-between; position: relative; gap: 12px; }
-    h1 { font-size: 1.55rem; line-height: 1.2; margin: 0; }
-    .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px; margin: 8px 0 22px; }
-    #counter { color: #697178; font-size: .9rem; }
-    #viewed-indicator { font-size: .72rem; font-weight: 650; color: #51646d; background: #e7eded; border-radius: 20px; padding: 3px 8px; white-space: nowrap; }
+    .header { position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 22px 0; }
+    .header, .header * { -webkit-user-select: none; user-select: none; }
+    h1 { font-size: 1.2rem; line-height: 1.2; letter-spacing: -.035em; font-weight: 730; margin: 0; color: #263f49; }
+    h1 span { font-weight: 400; }
+    .progress-row { display: flex; align-items: end; justify-content: space-between; gap: 12px; min-height: 57px; margin: 0 0 19px; }
+    #pack-label { color: #829198; text-transform: uppercase; font-size: .68rem; font-weight: 720; letter-spacing: .09em; margin-bottom: 6px; }
+    #counter { color: #263f49; font-size: 1.4rem; font-weight: 620; line-height: 1.2; letter-spacing: -.025em; }
+    #viewed-indicator { font-size: .75rem; font-weight: 650; color: #51646d; background: #e7eded; border-radius: 20px; padding: 6px 11px; white-space: nowrap; margin-bottom: 2px; }
     /* Reserve the same space whether the list is hidden or revealed. */
-    .word-stage { position: relative; height: 260px; }
+    .word-stage { position: relative; height: clamp(220px, 31dvh, 265px); }
     #words {
       position: absolute;
       inset: 0;
@@ -96,14 +108,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      border: 1px dashed #bcccd0;
-      border-radius: 12px;
+      border: 1.5px dashed #bcccd0;
+      border-radius: 15px;
       background: #eef3f3;
       color: #263f49;
       font: inherit;
-      font-size: 1rem;
-      font-weight: 600;
       cursor: pointer;
       touch-action: none;
       user-select: none;
@@ -111,7 +120,6 @@
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
-    .reveal-cover .cover-icon { color: #68818b; font-size: 1.65rem; font-weight: 400; }
     .reveal-cover:hover { background: #e7efef; }
     .reveal-cover:focus-visible { outline: 3px solid #87afba; outline-offset: 3px; }
     /* Keep the hit target active while held: hiding the button itself would lose pointerup. */
@@ -121,9 +129,8 @@
       border-color: transparent;
       color: transparent;
     }
-    .reveal-cover[data-revealing="true"] > * { visibility: hidden; }
     #words { user-select: none; -webkit-user-select: none; }
-    #next { width: 100%; border: 0; border-radius: 10px; background: #263f49; color: #fff; font-size: 1rem; padding: 15px; cursor: pointer; margin-top: 16px; }
+    #next { width: 100%; min-height: 53px; border: 0; border-radius: 12px; background: #263f49; color: #fff; font-size: 1rem; padding: 15px; cursor: pointer; margin-top: 16px; }
     button:disabled { opacity: .4; cursor: default; }
     #status { font-size: .85rem; color: #697178; margin-top: 14px; }
     #status:empty { display: none; }
@@ -134,9 +141,9 @@
       place-content: center;
       gap: 5px;
       flex-shrink: 0;
-      border: 1px solid #e5e8e8;
-      border-radius: 9px;
-      background: #fff;
+      border: 1px solid #263f4924;
+      border-radius: 12px;
+      background: #ffffff60;
       cursor: pointer;
     }
     .menu-toggle span { display: block; width: 19px; height: 2px; border-radius: 2px; background: #263f49; }
@@ -144,10 +151,10 @@
     .menu-toggle:focus-visible, .list-choice:focus-visible, #next:focus-visible { outline: 3px solid #87afba; outline-offset: 2px; }
     .list-menu {
       position: absolute;
-      right: 0;
+      right: 22px;
       top: calc(100% + 9px);
       z-index: 10;
-      width: min(318px, calc(100vw - 80px));
+      width: min(318px, calc(100vw - 40px));
       max-height: min(60vh, 440px);
       overflow-y: auto;
       padding: 16px;
@@ -182,6 +189,15 @@
     .list-choice[data-viewed="true"]:hover { background: #d8dede; color: #52666e; }
     .list-choice:hover { background: #e6ebec; }
     .list-choice[aria-current="true"], .list-choice[aria-current="true"]:hover { background: #263f49; color: #fff; }
+    @media (min-width: 600px) {
+      .app-layout { max-height: 900px; min-height: min(100dvh, 900px); }
+      .panel { border-radius: 28px 28px 20px 20px; margin-bottom: 20px; padding-bottom: 24px; }
+    }
+    @media (max-height: 700px) {
+      .tap-counter { min-height: 130px; }
+      .panel { padding-top: 18px; }
+      .word-stage { height: 212px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       .round-backdrop-layer { transition: none; }
       .tap-number.animate, .tap-ghost { animation: none; }
@@ -195,16 +211,8 @@
     <div class="round-backdrop-layer" id="round-backdrop-b"></div>
   </div>
   <div class="app-layout">
-    <section class="tap-counter" aria-label="Tally counter">
-      <button id="tap-count" class="tap-count" type="button" aria-label="Increase counter"><span id="tap-number" class="tap-number" aria-live="off">0</span></button>
-      <div class="tap-controls">
-        <button id="tap-undo" class="tap-control" type="button" aria-label="Subtract one" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></button>
-        <button id="tap-reset" class="tap-control" type="button" aria-label="Reset counter to zero" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2.3 6"/><path d="M4 4v7h7"/></svg></button>
-      </div>
-    </section>
-  <main class="panel">
-    <div class="header" id="header">
-      <h1>25 Words or Less</h1>
+    <header class="header" id="header">
+      <h1>25 Words <span>or Less</span></h1>
       <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Select a pack or list" aria-controls="list-menu" aria-expanded="false" disabled>
         <span aria-hidden="true"></span>
         <span aria-hidden="true"></span>
@@ -218,14 +226,20 @@
         <div id="list-options" class="list-options" role="group" aria-label="Word lists"></div>
         <div class="menu-hint">Shaded lists have been viewed and can be replayed.</div>
       </div>
-    </div>
-    <div class="progress-row"><div id="counter">Loading lists…</div><span id="viewed-indicator" hidden>Viewed</span></div>
+    </header>
+    <section class="tap-counter" aria-label="Tally counter">
+      <button id="tap-count" class="tap-count" type="button" aria-label="Increase counter"><span id="tap-number" class="tap-number" aria-live="off">0</span></button>
+      <div class="tap-controls">
+        <button id="tap-undo" class="tap-control" type="button" aria-label="Subtract one" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></button>
+        <button id="tap-reset" class="tap-control" type="button" aria-label="Reset counter to zero" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2.3 6"/><path d="M4 4v7h7"/></svg></button>
+      </div>
+    </section>
+  <main class="panel">
+
+    <div class="progress-row"><div class="progress-detail"><div id="pack-label"></div><div id="counter">Loading lists…</div></div><span id="viewed-indicator" hidden>Viewed</span></div>
     <div class="word-stage">
       <ol id="words" hidden></ol>
-      <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Press and hold to reveal words" aria-pressed="false" hidden>
-        <span class="cover-icon" aria-hidden="true">◉</span>
-        <span>Press and hold to reveal words</span>
-      </button>
+      <button id="reveal-cover" class="reveal-cover" type="button" aria-controls="words" aria-label="Press and hold to reveal words" aria-pressed="false" hidden></button>
     </div>
     <button id="next" disabled>Next list →</button>
     <div id="status" role="status" aria-live="polite"></div>

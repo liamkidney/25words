@@ -37,10 +37,23 @@
       opacity: 0;
       transition: opacity 850ms ease-in-out;
     }
+    .app-layout { position: relative; z-index: 1; width: min(440px, calc(100% - 48px)); display: flex; flex-direction: column; align-items: stretch; }
+    .tap-counter { height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #263f49; }
+    .tap-count { width: 100%; flex: 1; display: grid; place-items: center; position: relative; border: 0; background: transparent; color: inherit; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .tap-number { font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; font-variant-numeric: tabular-nums; }
+    .tap-number.animate { animation: number-enter 260ms ease-out both; }
+    .tap-ghost { position: absolute; font-size: clamp(5rem, 20vw, 7.5rem); line-height: 1; font-weight: 300; pointer-events: none; animation: number-float 320ms ease-out forwards; }
+    .tap-controls { display: flex; justify-content: center; gap: 24px; padding-bottom: 12px; }
+    .tap-control { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #263f49; opacity: .72; display: grid; place-items: center; cursor: pointer; }
+    .tap-control svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .tap-control:disabled { opacity: .24; }
+    .tap-control:focus-visible, .tap-count:focus-visible { outline: 3px solid #263f49; outline-offset: 2px; }
+    @keyframes number-float { from { opacity: .7; transform: translateY(0); } to { opacity: 0; transform: translateY(-32px); } }
+    @keyframes number-enter { from { opacity: .2; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     .panel {
       position: relative;
       z-index: 1;
-      width: min(440px, calc(100% - 48px));
+      width: 100%;
       background: #fff;
       border: 1px solid #e5e5e2;
       border-radius: 16px;
@@ -168,6 +181,7 @@
     .list-choice[aria-current="true"], .list-choice[aria-current="true"]:hover { background: #263f49; color: #fff; }
     @media (prefers-reduced-motion: reduce) {
       .round-backdrop-layer { transition: none; }
+      .tap-number.animate, .tap-ghost { animation: none; }
     }
   </style>
   <script src="./app.js" defer></script>
@@ -177,6 +191,14 @@
     <div class="round-backdrop-layer" id="round-backdrop-a"></div>
     <div class="round-backdrop-layer" id="round-backdrop-b"></div>
   </div>
+  <div class="app-layout">
+    <section class="tap-counter" aria-label="Tally counter">
+      <button id="tap-count" class="tap-count" type="button" aria-label="Increase counter"><span id="tap-number" class="tap-number" aria-live="off">0</span></button>
+      <div class="tap-controls">
+        <button id="tap-undo" class="tap-control" type="button" aria-label="Subtract one" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg></button>
+        <button id="tap-reset" class="tap-control" type="button" aria-label="Reset counter to zero" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11a8 8 0 1 1 2.3 6"/><path d="M4 4v7h7"/></svg></button>
+      </div>
+    </section>
   <main class="panel">
     <div class="header" id="header">
       <h1>25 Words or Less</h1>
@@ -205,5 +227,6 @@
     <button id="next" disabled>Next list →</button>
     <div id="status" role="status" aria-live="polite"></div>
   </main>
+  </div>
 </body>
 </html>

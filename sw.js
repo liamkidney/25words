@@ -39,6 +39,13 @@ self.addEventListener('fetch', event => {
   // Production's broader /25words/ scope must not cache /25words/dev/ pages.
   if (CHANNEL === 'prod' && url.pathname.startsWith(new URL('dev/', self.registration.scope).pathname)) return;
 
+  // Version probes are unique URLs. Never store one entry every time an open
+  // Home Screen app wakes up or checks for an update.
+  if (url.searchParams.has('_version_check')) {
+    event.respondWith(fetch(new Request(request, { cache: 'no-store' })));
+    return;
+  }
+
   event.respondWith(
     fetch(new Request(request, { cache: 'no-store' }))
       .then(response => {

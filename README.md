@@ -22,3 +22,7 @@ npm run build
 ```
 
 The browser app is static and requires no server-side secrets. Its Supabase publishable key is public, and database access is restricted through row-level security.
+
+## Linear promotion policy
+
+All changes are implemented and tested on `dev`. Production is an older, validated commit on the same ancestry. After inspecting the live development site, use GitHub Actions → **Promote validated Dev to Main** (Run workflow on `main`) to test and fast-forward `main` to the exact `dev` SHA; the Pages workflow publishes the released commit. Do not commit directly to `main`, cherry-pick or use squash/rebase merges for releases. If ancestry fails, reconcile into `dev` before retrying. Only the base URL, PWA name, cache namespace and revision are channel-specific.

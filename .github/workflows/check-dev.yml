@@ -1,0 +1,36 @@
+name: Validate 25 Words Dev
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout development
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: development
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --prefix development --no-audit --no-fund
+
+      - name: Validate JavaScript
+        run: node --check development/build.mjs && node --check development/app.test.mjs
+
+      - name: Run tests
+        run: npm test --prefix development
+
+      - name: Build validation
+        run: SITE_OUT="$GITHUB_WORKSPACE/dev-build" npm run build --prefix development

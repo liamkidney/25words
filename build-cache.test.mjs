@@ -20,6 +20,7 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     const client = readFileSync(join(output, 'cache.js'), 'utf8');
 
     assert.match(html, /src="\.\/app\.js\?v=1abcde99"/);
+    assert.match(html, /href="\.\/favicon\.svg\?v=1abcde99"/);
     assert.match(html, /src="\.\/cache\.js\?v=1abcde99" data-cache-manager/);
     assert.match(html, /dev · 1abcde99/);
     assert.match(worker, /const CHANNEL = 'dev'/);
@@ -29,6 +30,9 @@ test('build stamps unique asset URLs and a channel-specific, network-first cache
     assert.match(client, /updateViaCache: 'none'/);
     assert.match(client, /controllerchange/);
     assert.ok(existsSync(join(output, 'app.js')));
+    assert.ok(existsSync(join(output, 'favicon.svg')));
+    assert.match(readFileSync(join(output, 'favicon.svg'), 'utf8'), /<linearGradient id="bg"/);
+    assert.match(worker, /favicon\.svg\?v=' \+ REVISION/);
   } finally {
     rmSync(output, { recursive: true, force: true });
   }

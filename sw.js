@@ -3,7 +3,7 @@ const CHANNEL = '__CHANNEL__';
 const REVISION = '__REVISION__';
 const CACHE = '25words-' + CHANNEL + '-' + REVISION;
 const ASSETS = ['./', './index.html', './cache.js?v=' + REVISION];
-if (CHANNEL === 'dev') ASSETS.push('./app.js?v=' + REVISION);
+if (CHANNEL === 'dev') ASSETS.push('./app.js?v=' + REVISION, './favicon.svg?v=' + REVISION);
 
 self.addEventListener('install', event => {
   event.waitUntil(

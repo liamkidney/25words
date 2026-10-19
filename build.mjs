@@ -20,6 +20,9 @@ let html = sourceHtml;
 if (hasAppJs) {
   html = html.replace('src="./app.js"', 'src="./app.js?v=' + revision + '"');
 }
+if (channel === 'dev') {
+  html = html.replace('href="./favicon.svg"', 'href="./favicon.svg?v=' + revision + '"');
+}
 html = html.replace('</head>',
   '  <script src="./cache.js?v=' + revision + '" data-cache-manager defer></script>\n</head>');
 html = html.replace('</main>',
@@ -35,6 +38,7 @@ await mkdir(output, { recursive: true });
 await Promise.all([
   writeFile(join(output, 'index.html'), html),
   copyFile('cache.js', join(output, 'cache.js')),
+  ...(channel === 'dev' ? [copyFile('favicon.svg', join(output, 'favicon.svg'))] : []),
   writeFile(join(output, 'sw.js'), worker),
   ...(hasAppJs ? [copyFile('app.js', join(output, 'app.js'))] : [])
 ]);

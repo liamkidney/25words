@@ -1,6 +1,6 @@
 # 25 Words or Less
 
-Minimal word-list web app. Displays one list of ten words at a time with a **Next list** button. Progress is retained in browser local storage.
+Minimal word-list web app. Displays one list of ten words at a time with a **Next list** button. The selected pack, list position, viewed-list history, and tally counter are saved together in browser local storage. Refreshing or reopening the app on the same browser/device restores them; undo and reset also save immediately. This is local to that browser, not synced between devices.
 
 ## Environments
 

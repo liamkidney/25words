@@ -65,7 +65,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false } = {}) 
   const window = new FakeElement();
   runInNewContext(script,{document,window,localStorage,fetch});
   await new Promise(resolve=>setImmediate(resolve));
-  return {elements,document,store};
+  return {elements,document,window,store};
 }
 
 test('menu and reveal button are present and accessible',()=>{

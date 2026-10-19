@@ -16,6 +16,7 @@ class FakeElement {
     this.textContent = '';
     this.focused = false;
     this.capturedPointer = null;
+    this.style = {};
   }
   get firstElementChild() { return this.children[0]; }
   replaceChildren(...children) { this.children = children; }
@@ -36,7 +37,7 @@ class FakeElement {
 }
 
 async function runApp({ savedIndex = null, count = 100, failing = false } = {}) {
-  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options'];
+  const ids = ['header','counter','words','reveal-cover','next','status','menu-toggle','list-menu','list-options','round-backdrop-a','round-backdrop-b'];
   const elements = Object.fromEntries(ids.map(id => [id,new FakeElement()]));
   elements.header.replaceChildren(elements['menu-toggle'], elements['list-menu']);
   elements['list-menu'].replaceChildren(elements['list-options']);
@@ -73,6 +74,9 @@ test('menu and reveal button are present and accessible',()=>{
   assert.match(html,/id="list-menu"[^>]+hidden/);
   assert.match(html,/id="reveal-cover"[^>]+aria-controls="words"/);
   assert.match(html,/Press and hold to reveal words/);
+  assert.match(html,/class="round-backdrop" aria-hidden="true"/);
+  assert.match(html,/prefers-reduced-motion: reduce/);
+  assert.match(html,/\.panel \{\s*position: relative;\s*z-index: 1;/);
   assert.match(html,/data-revealing="true"/);
   assert.match(html,/<ol id="words" hidden>/);
   assert.match(html,/src=".\/app.js"/);
@@ -195,4 +199,50 @@ test('load failure does not expose words or enable menu',async()=>{
   assert.equal(elements.counter.textContent,'Unable to load lists');
   assert.equal(elements['reveal-cover'].hidden,true);
   assert.equal(elements['menu-toggle'].disabled,true);
+});
+
+
+test('outer background shifts pastel gradient when moving to a new list',async()=>{
+  const {elements}=await runApp();
+  const front=elements['round-backdrop-a'];
+  const back=elements['round-backdrop-b'];
+  const first=front.style.backgroundImage;
+  assert.match(first,/linear-gradient\(/);
+  assert.equal(front.style.opacity,'1');
+  assert.equal(back.style.opacity,'0');
+
+  // Revealing and hiding the same list does not alter the backdrop.
+  elements['reveal-cover'].dispatch('pointerdown',{pointerId:1,pointerType:'touch'});
+  elements['reveal-cover'].dispatch('pointerup',{pointerId:1});
+  assert.equal(front.style.backgroundImage,first);
+
+  elements.next.dispatch('click');
+  const second=back.style.backgroundImage;
+  assert.notEqual(second,first);
+  assert.equal(front.style.opacity,'0');
+  assert.equal(back.style.opacity,'1');
+
+  elements['menu-toggle'].dispatch('click');
+  elements['list-options'].children[2].dispatch('click');
+  assert.equal(front.style.opacity,'1');
+  assert.equal(back.style.opacity,'0');
+  assert.notEqual(front.style.backgroundImage,second);
+});
+
+test('saved list position recreates same colour; finishing does not shift',async()=>{
+  const {elements}=await runApp({savedIndex:7});
+  const last=elements['round-backdrop-a'].style.backgroundImage;
+  assert.match(last,/linear-gradient\(/);
+  elements.next.dispatch('click');
+  const after=elements['round-backdrop-b'].style.backgroundImage;
+  assert.notEqual(last,after);
+
+  const restored=await runApp({savedIndex:8});
+  assert.equal(restored.elements['round-backdrop-a'].style.backgroundImage,after);
+
+  const final=await runApp({savedIndex:99});
+  const colour=final.elements['round-backdrop-a'].style.backgroundImage;
+  final.elements.next.dispatch('click');
+  assert.equal(final.elements['round-backdrop-a'].style.backgroundImage,colour);
+  assert.equal(final.elements['round-backdrop-b'].style.opacity,'0');
 });

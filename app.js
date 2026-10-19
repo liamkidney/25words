@@ -13,6 +13,42 @@ const status = document.getElementById('status');
 const menuToggle = document.getElementById('menu-toggle');
 const listMenu = document.getElementById('list-menu');
 const listOptions = document.getElementById('list-options');
+const backdropLayers = [
+  document.getElementById('round-backdrop-a'),
+  document.getElementById('round-backdrop-b')
+];
+
+// Deliberately varied pastels. Each list has a repeatable palette, so Next
+// and direct selection reliably show a different backdrop from the last list.
+const roundGradients = [
+  'linear-gradient(135deg, #f9dcd3 0%, #fcebe0 55%, #efe0f4 100%)', // peach
+  'linear-gradient(135deg, #deddf7 0%, #e3e8fb 55%, #dbeefa 100%)', // lilac blue
+  'linear-gradient(135deg, #d8eee5 0%, #e6f4df 55%, #ebf4da 100%)', // sage
+  'linear-gradient(135deg, #fff0c8 0%, #ffe4ca 52%, #f7dce2 100%)', // butter
+  'linear-gradient(135deg, #f6dce8 0%, #f8e7f0 55%, #e9dcf5 100%)', // blush
+  'linear-gradient(135deg, #d9ecf5 0%, #d9f0ed 55%, #e6f1e3 100%)', // sea glass
+  'linear-gradient(135deg, #eadcf7 0%, #f1e0ef 55%, #f9e9dc 100%)', // orchid
+  'linear-gradient(135deg, #e0eaff 0%, #eae9f7 55%, #f6eed4 100%)'  // periwinkle
+];
+let currentBackdropLayer = 0;
+let lastBackgroundIndex = null;
+
+function updateRoundBackground() {
+  if (index >= lists.length || index === lastBackgroundIndex) return;
+  const gradient = roundGradients[index % roundGradients.length];
+  if (lastBackgroundIndex === null) {
+    backdropLayers[0].style.backgroundImage = gradient;
+    backdropLayers[0].style.opacity = '1';
+    backdropLayers[1].style.opacity = '0';
+  } else {
+    const incoming = 1 - currentBackdropLayer;
+    backdropLayers[incoming].style.backgroundImage = gradient;
+    backdropLayers[incoming].style.opacity = '1';
+    backdropLayers[currentBackdropLayer].style.opacity = '0';
+    currentBackdropLayer = incoming;
+  }
+  lastBackgroundIndex = index;
+}
 
 let lists = [];
 let index = 0;
@@ -53,6 +89,7 @@ function savePosition() {
 
 function render() {
   hideWords();
+  updateRoundBackground();
   for (const [position, choice] of Array.from(listOptions.children).entries()) {
     if (position === index) choice.setAttribute('aria-current', 'true');
     else choice.removeAttribute('aria-current');

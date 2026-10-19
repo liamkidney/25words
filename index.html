@@ -9,14 +9,30 @@
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f7f7f5;
+      background: #f6e7e2;
       color: #1d2427;
       margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
     }
+    /* The outermost background changes between lists; the card stays white. */
+    .round-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .round-backdrop-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 850ms ease-in-out;
+    }
     .panel {
+      position: relative;
+      z-index: 1;
       width: min(440px, calc(100% - 48px));
       background: #fff;
       border: 1px solid #e5e5e2;
@@ -115,10 +131,17 @@
     }
     .list-choice:hover { background: #e6ebec; }
     .list-choice[aria-current="true"], .list-choice[aria-current="true"]:hover { background: #263f49; color: #fff; }
+    @media (prefers-reduced-motion: reduce) {
+      .round-backdrop-layer { transition: none; }
+    }
   </style>
   <script src="./app.js" defer></script>
 </head>
 <body>
+  <div class="round-backdrop" aria-hidden="true">
+    <div class="round-backdrop-layer" id="round-backdrop-a"></div>
+    <div class="round-backdrop-layer" id="round-backdrop-b"></div>
+  </div>
   <main class="panel">
     <div class="header" id="header">
       <h1>25 Words or Less</h1>

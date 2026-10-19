@@ -48,11 +48,14 @@ function updateRoundBackground() {
   if (key === lastBackgroundKey) return;
   const packOffset = Math.max(0, packs.findIndex(pack => pack.id === activePackId)) * 3;
   const gradient = roundGradients[(index + packOffset + tally) % roundGradients.length];
-  // Keep the browser/PWA status-bar fallback in the same palette as the
-  // fullscreen gradient, even on iOS versions that sample the body colour.
+  // iOS Home Screen apps may render their own opaque status bar instead of
+  // letting the webpage paint underneath it. Keep both root backgrounds in
+  // sync with the gradient's top colour for Safari's automatic sampling.
+  // Avoid fixed theme-color or legacy translucent status-bar hints: those
+  // can leave a stale, differently coloured strip as the tally changes.
   const topColour = gradient.match(/#[a-f\d]{6}/i)[0];
+  document.documentElement.style.backgroundColor = topColour;
   document.body.style.backgroundColor = topColour;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', topColour);
   if (lastBackgroundKey === null) {
     backdropLayers[0].style.backgroundImage = gradient;
     backdropLayers[0].style.opacity = '1';

@@ -17,6 +17,9 @@ if (!sourceHtml.includes('</head>') || !sourceHtml.includes('</main>')) {
 }
 
 let html = sourceHtml;
+// PWA branding is a build-time environment setting, not branch-specific HTML.
+html = html.replace('name="apple-mobile-web-app-title" content="25 Words"',
+  'name="apple-mobile-web-app-title" content="' + (channel === 'dev' ? '25 Words Dev' : '25 Words') + '"');
 if (hasAppJs) {
   html = html.replace('src="./app.js"', 'src="./app.js?v=' + revision + '"');
 }

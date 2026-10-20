@@ -95,7 +95,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   return {elements,document,window,store};
 }
 
-test('compact app header and bottom sheet follow the agreed visual hierarchy', async () => {
+test('compact header, centred counter and floating island follow the agreed hierarchy', async () => {
   const headerIndex = html.indexOf('<header class="header" id="header">');
   const tapIndex = html.indexOf('<section class="tap-counter"');
   const sheetIndex = html.indexOf('<main class="panel">');
@@ -103,8 +103,10 @@ test('compact app header and bottom sheet follow the agreed visual hierarchy', a
   assert.match(html, /<h1>25 Words <span>or Less<\/span><\/h1>/);
   assert.match(html, /<div id="pack-label"><\/div><div id="counter">Loading lists/);
   assert.match(html, /\.app-layout \{[^}]*min-height: calc\(100dvh - env\(safe-area-inset-top, 0px\)\);/s);
-  assert.match(html, /\.panel \{[^}]*border-radius: 28px 28px 0 0;/s);
-  assert.match(html, /padding: 26px 24px calc\(22px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.ok(html.includes('margin: 8px 16px 20px;'), 'Island has visible gradient on all sides');
+  assert.ok(html.includes('border-radius: 26px;'), 'Island has four rounded corners');
+  assert.ok(html.includes('box-shadow: 0 12px 28px #3c59601c'), 'Island has a subtle floating shadow');
+  assert.ok(html.includes('padding: 24px 21px 18px;'));
   const {elements}=await runApp();
   assert.equal(elements['pack-label'].textContent, 'Pack 1');
   assert.equal(elements.counter.textContent, 'List 1 of 100');
@@ -570,9 +572,14 @@ test('reveal target prevents iOS long-press selection and callouts', async () =>
 });
 
 test('Next list has stable icon styling and updates the label only', async () => {
-  assert.match(html, /id="next-label">Next list<\/span>/);
+  assert.ok(html.includes('<div class="panel-footer"><button id="next"'));
+  assert.ok(html.includes('id="next-label" class="visually-hidden">Next list</span>'));
   assert.match(html, /class="next-arrow" aria-hidden="true"/);
-  assert.match(html, /#next\s*\{[^}]*linear-gradient\(125deg, #345661, #203b46\);/s);
+  assert.ok(html.includes('width: 52px;'));
+  assert.ok(html.includes('height: 52px;'));
+  assert.ok(html.includes('border-radius: 50%;'));
+  assert.ok(html.includes('background: linear-gradient(135deg, #31505b, #1f3b45);'));
+  assert.ok(html.includes('.visually-hidden {'));
   const {elements}=await runApp({count:2});
   assert.equal(elements['next-label'].textContent,'Next list');
   elements.next.dispatch('click');

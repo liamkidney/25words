@@ -41,7 +41,7 @@ class FakeElement {
 }
 
 async function runApp({ savedIndex = null, count = 100, failing = false, savedProgress = null, secondPack = false } = {}) {
-  const ids = ['header','pack-label','counter','words','word-stage','reveal-cover','next','next-label','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b','tap-count','tap-number','tap-undo','tap-reset'];
+  const ids = ['header','pack-label','counter','words','word-stage','reveal-cover','previous','next','next-label','status','menu-toggle','list-menu','list-options','pack-options','viewed-indicator','viewed-count','round-backdrop-a','round-backdrop-b','tap-count','tap-number','tap-undo','tap-reset'];
   const elements = Object.fromEntries(ids.map(id => [id,new FakeElement()]));
   elements.header.replaceChildren(elements['menu-toggle'], elements['list-menu']);
   elements['list-menu'].replaceChildren(elements['pack-options'], elements['list-options']);
@@ -50,6 +50,7 @@ async function runApp({ savedIndex = null, count = 100, failing = false, savedPr
   elements.words.hidden = true;
   elements['reveal-cover'].hidden = true;
   elements['menu-toggle'].disabled = true;
+  elements.previous.disabled = true;
   elements.next.disabled = true;
   elements['tap-number'].textContent = '0';
   elements['tap-undo'].disabled = true;
@@ -571,19 +572,69 @@ test('reveal target prevents iOS long-press selection and callouts', async () =>
   assert.equal(cleared,1);
 });
 
-test('Next list has stable icon styling and updates the label only', async () => {
-  assert.ok(html.includes('<div class="panel-footer"><button id="next"'));
+test('previous and next are adjacent circular arrows with accessible labels', async () => {
+  const previousIndex = html.indexOf('id="previous" class="panel-navigation"');
+  const nextIndex = html.indexOf('id="next" class="panel-navigation"');
+  const footerIndex = html.indexOf('<div class="panel-footer">');
+  assert.ok(footerIndex > 0 && footerIndex < previousIndex && previousIndex < nextIndex);
+  assert.ok(html.includes('aria-label="Previous list"'));
   assert.ok(html.includes('id="next-label" class="visually-hidden">Next list</span>'));
-  assert.match(html, /class="next-arrow" aria-hidden="true"/);
+  assert.ok(html.includes('.panel-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 14px; }'));
+  assert.ok(html.includes('.panel-navigation {'));
   assert.ok(html.includes('width: 52px;'));
   assert.ok(html.includes('height: 52px;'));
   assert.ok(html.includes('border-radius: 50%;'));
   assert.ok(html.includes('background: linear-gradient(135deg, #31505b, #1f3b45);'));
   assert.ok(html.includes('.visually-hidden {'));
   const {elements}=await runApp({count:2});
+  assert.equal(elements.previous.disabled, true);
   assert.equal(elements['next-label'].textContent,'Next list');
   elements.next.dispatch('click');
+  assert.equal(elements.previous.disabled,false);
   assert.equal(elements['next-label'].textContent,'Finish');
   elements.next.dispatch('click');
   assert.equal(elements.next.disabled,true);
+  assert.equal(elements.previous.disabled,false);
+});
+
+test('previous list navigates backwards, preserves tally and viewed status, and saves position', async () => {
+  const {elements,store}=await runApp({count:2});
+  elements.previous.dispatch('click');
+  assert.equal(elements.counter.textContent, 'List 1 of 2');
+  assert.equal(elements.previous.disabled, true);
+
+  elements['tap-count'].dispatch('click');
+  elements['reveal-cover'].dispatch('pointerdown', {pointerId:77,pointerType:'touch'});
+  elements['reveal-cover'].dispatch('pointerup', {pointerId:77});
+  elements.next.dispatch('click');
+  assert.equal(elements.counter.textContent, 'List 2 of 2');
+  assert.equal(elements.previous.disabled, false);
+
+  elements['reveal-cover'].dispatch('pointerdown', {pointerId:78,pointerType:'touch'});
+  assert.equal(elements.words.hidden,false);
+  elements.previous.dispatch('click');
+  assert.equal(elements.counter.textContent, 'List 1 of 2');
+  assert.equal(elements.words.hidden,true);
+  assert.equal(elements.previous.disabled,true);
+  assert.equal(elements['tap-number'].textContent,'1');
+  assert.equal(elements['viewed-indicator'].hidden,false);
+  assert.equal(JSON.parse(store.get('25words-progress-v2')).positions['pack-1'],0);
+
+  elements.next.dispatch('click');
+  elements.next.dispatch('click');
+  assert.equal(elements.counter.textContent, 'All lists completed');
+  assert.equal(elements.next.disabled,true);
+  assert.equal(elements.previous.disabled,false);
+  elements.previous.dispatch('click');
+  assert.equal(elements.counter.textContent, 'List 2 of 2');
+  assert.equal(elements.next.disabled,false);
+  assert.equal(elements.words.hidden,true);
+  const savedProgress=JSON.parse(store.get('25words-progress-v2'));
+  assert.equal(savedProgress.tally,1);
+  assert.equal(savedProgress.positions['pack-1'],1);
+  assert.deepEqual(savedProgress.viewed['pack-1'],['list_1','list_2']);
+  const restored=await runApp({count:2,savedProgress});
+  assert.equal(restored.elements.counter.textContent,'List 2 of 2');
+  assert.equal(restored.elements.previous.disabled,false);
+  assert.equal(restored.elements['tap-number'].textContent,'1');
 });

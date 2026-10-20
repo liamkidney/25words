@@ -173,37 +173,26 @@
       width: 52px;
       height: 52px;
       flex: 0 0 52px;
+      border: 0;
       border-radius: 50%;
+      background: linear-gradient(135deg, #31505b, #1f3b45);
+      color: #fff;
       display: grid;
       place-items: center;
+      box-shadow: 0 5px 12px #29465129;
       cursor: pointer;
       transition: transform 130ms ease, box-shadow 130ms ease, filter 130ms ease;
     }
-    #previous {
-      border: 1px solid #a9bfc6;
-      background: #dce9ed;
-      color: #263f49;
-      box-shadow: 0 3px 9px #2946511c;
-    }
-    #previous:hover:not(:disabled) { background: #c9dce2; }
-    #previous:active:not(:disabled) { transform: scale(.95); }
-    /* Keep the unavailable action discernible on List 1, rather than fading
-       the whole light-coloured control almost into the white card. */
+    .panel-navigation:hover:not(:disabled) { filter: brightness(1.07); }
+    .panel-navigation:active:not(:disabled) { transform: scale(.95); box-shadow: 0 2px 7px #2946512b; }
+    /* Previous is pale only when unavailable on the first list. */
     #previous:disabled {
       opacity: 1;
       background: #f0f4f5;
-      border-color: #c8d3d7;
+      border: 1px solid #c8d3d7;
       color: #758991;
       box-shadow: none;
     }
-    #next {
-      border: 0;
-      background: linear-gradient(135deg, #31505b, #1f3b45);
-      color: #fff;
-      box-shadow: 0 5px 12px #29465129;
-    }
-    #next:hover:not(:disabled) { filter: brightness(1.07); }
-    #next:active:not(:disabled) { transform: scale(.95); box-shadow: 0 2px 7px #2946512b; }
     .panel-navigation svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
     .visually-hidden {
       position: absolute;

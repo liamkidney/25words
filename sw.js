@@ -2,9 +2,9 @@
 const CHANNEL = '__CHANNEL__';
 const REVISION = '__REVISION__';
 const CACHE = '25words-' + CHANNEL + '-' + REVISION;
-const ASSETS = ['./', './index.html', './cache.js?v=' + REVISION];
+// The app's JavaScript must be available offline in both environments.
+const ASSETS = ['./', './index.html', './cache.js?v=' + REVISION, './app.js?v=' + REVISION];
 if (CHANNEL === 'dev') ASSETS.push(
-  './app.js?v=' + REVISION,
   './manifest.json?v=' + REVISION,
   './icon.svg?v=' + REVISION,
   './favicon-32.png?v=' + REVISION,
@@ -41,23 +41,30 @@ self.addEventListener('fetch', event => {
 
   // Version probes are unique URLs. Never store one entry every time an open
   // Home Screen app wakes up or checks for an update.
-  if (url.searchParams.has('_version_check')) {
+  // The revision endpoint must never fall back to a cached answer. A stale
+  // response would falsely tell a suspended iPhone app it is up to date.
+  if (url.pathname === new URL('./version.json', self.registration.scope).pathname) {
     event.respondWith(fetch(new Request(request, { cache: 'no-store' })));
     return;
   }
 
+  // Canonicalise navigation keys so revision query strings do not accumulate
+  // duplicate offline HTML entries or displace the latest app shell.
+  const cacheKey = request.mode === 'navigate'
+    ? new URL('./index.html', self.registration.scope).href
+    : request;
   event.respondWith(
     fetch(new Request(request, { cache: 'no-store' }))
       .then(response => {
         if (response.ok) {
           const copy = response.clone();
-          event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)).catch(() => {}));
+          event.waitUntil(caches.open(CACHE).then(cache => cache.put(cacheKey, copy)).catch(() => {}));
         }
         return response;
       })
       .catch(async () => {
         const cache = await caches.open(CACHE);
-        return (await cache.match(request, { ignoreSearch: true })) || Response.error();
+        return (await cache.match(cacheKey, { ignoreSearch: true })) || Response.error();
       })
   );
 });

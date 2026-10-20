@@ -573,8 +573,9 @@ test('reveal target prevents iOS long-press selection and callouts', async () =>
 });
 
 test('Previous control stays visibly drawn on List 1 and works from restored later lists', async () => {
-  assert.match(html, /#previous\s*\{[^}]*background: #dce9ed;[^}]*color: #263f49;/s);
-  assert.match(html, /#previous:disabled\s*\{[^}]*opacity: 1;[^}]*color: #758991;/s);
+  assert.match(html, /\.panel-navigation\s*\{[^}]*background: linear-gradient\(135deg, #31505b, #1f3b45\);[^}]*color: #fff;/s);
+  assert.match(html, /#previous:disabled\s*\{[^}]*opacity: 1;[^}]*background: #f0f4f5;[^}]*color: #758991;/s);
+  assert.doesNotMatch(html, /#previous\s*\{/, 'Enabled previous should inherit the same styling as Next');
   assert.doesNotMatch(html, /#previous:disabled\s*\{[^}]*opacity: \.35;/);
   const first = await runApp();
   assert.equal(first.elements.previous.disabled, true);

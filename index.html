@@ -180,14 +180,22 @@
       transition: transform 130ms ease, box-shadow 130ms ease, filter 130ms ease;
     }
     #previous {
-      border: 1px solid #dce5e7;
-      background: #f0f5f5;
-      color: #31505b;
-      box-shadow: 0 3px 9px #29465114;
+      border: 1px solid #a9bfc6;
+      background: #dce9ed;
+      color: #263f49;
+      box-shadow: 0 3px 9px #2946511c;
     }
-    #previous:hover:not(:disabled) { background: #e6eeee; }
+    #previous:hover:not(:disabled) { background: #c9dce2; }
     #previous:active:not(:disabled) { transform: scale(.95); }
-    #previous:disabled { opacity: .35; box-shadow: none; }
+    /* Keep the unavailable action discernible on List 1, rather than fading
+       the whole light-coloured control almost into the white card. */
+    #previous:disabled {
+      opacity: 1;
+      background: #f0f4f5;
+      border-color: #c8d3d7;
+      color: #758991;
+      box-shadow: none;
+    }
     #next {
       border: 0;
       background: linear-gradient(135deg, #31505b, #1f3b45);

@@ -527,14 +527,14 @@ test('white iOS status bar blends into changing gradient without sampling new co
   assert.doesNotMatch(html, /apple-mobile-web-app-status-bar-style/);
   assert.doesNotMatch(html, /<meta name="theme-color"/);
   assert.ok(html.includes(':root { color-scheme: light; background-color: #fff; }'));
-  assert.match(html, /body\\s*\\{[^}]*background: #fff;/s);
-  assert.match(html, /\\.status-bar-surface\\s*\\{[^}]*position: fixed;[^}]*background-color: #fff;/s);
+  assert.match(html, /body\s*\{[^}]*background: #fff;/s);
+  assert.match(html, /\.status-bar-surface\s*\{[^}]*position: fixed;[^}]*background-color: #fff;/s);
   assert.match(html, /class="status-bar-surface" aria-hidden="true"/);
-  assert.match(html, /-webkit-mask-image: linear-gradient\\(to bottom,/);
-  assert.match(html, /mask-image: linear-gradient\\(to bottom,/);
-  assert.match(html, /transparent calc\\(env\\(safe-area-inset-top, 0px\\) \\+ 12px\\)/);
-  assert.match(html, /#000 calc\\(env\\(safe-area-inset-top, 0px\\) \\+ 190px\\)/);
-  assert.doesNotMatch(script, /document\\.(?:documentElement|body)\\.style\\.backgroundColor/);
+  assert.match(html, /-webkit-mask-image: linear-gradient\(to bottom,/);
+  assert.match(html, /mask-image: linear-gradient\(to bottom,/);
+  assert.match(html, /transparent calc\(env\(safe-area-inset-top, 0px\) \+ 12px\)/);
+  assert.match(html, /#000 calc\(env\(safe-area-inset-top, 0px\) \+ 190px\)/);
+  assert.doesNotMatch(script, /document\.(?:documentElement|body)\.style\.backgroundColor/);
 
   const {elements,document}=await runApp();
   const initial = elements['round-backdrop-a'].style.backgroundImage;

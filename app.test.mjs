@@ -522,25 +522,29 @@ test('tally buttons are stacked at the left edge, outside the central counter ta
   assert.match(html, /id="tap-reset"[^>]*aria-label="Reset counter to zero"/);
 });
 
-test('iOS uses automatic status-bar colour and the changing page backdrop', async () => {
+test('white iOS status bar blends into changing gradient without sampling new colours', async () => {
   assert.match(html, /viewport-fit=cover/);
   assert.doesNotMatch(html, /apple-mobile-web-app-status-bar-style/);
   assert.doesNotMatch(html, /<meta name="theme-color"/);
-  assert.ok(html.includes(':root { color-scheme: light; background-color: #f4a59b; }'));
-  const {elements,document} = await runApp();
-  const expectBackground = colour => {
-    assert.equal(document.documentElement.style.backgroundColor, colour);
-    assert.equal(document.body.style.backgroundColor, colour);
-  };
-  expectBackground('#f4a59b');
+  assert.ok(html.includes(':root { color-scheme: light; background-color: #fff; }'));
+  assert.match(html, /body\\s*\\{[^}]*background: #fff;/s);
+  assert.match(html, /\\.status-bar-surface\\s*\\{[^}]*position: fixed;[^}]*background-color: #fff;/s);
+  assert.match(html, /class="status-bar-surface" aria-hidden="true"/);
+  assert.match(html, /-webkit-mask-image: linear-gradient\\(to bottom,/);
+  assert.match(html, /mask-image: linear-gradient\\(to bottom,/);
+  assert.match(html, /transparent calc\\(env\\(safe-area-inset-top, 0px\\) \\+ 12px\\)/);
+  assert.match(html, /#000 calc\\(env\\(safe-area-inset-top, 0px\\) \\+ 190px\\)/);
+  assert.doesNotMatch(script, /document\\.(?:documentElement|body)\\.style\\.backgroundColor/);
+
+  const {elements,document}=await runApp();
+  const initial = elements['round-backdrop-a'].style.backgroundImage;
+  assert.match(initial, /linear-gradient/);
   elements['tap-count'].dispatch('click');
-  expectBackground('#a7b9f5');
+  const nextGradient = elements['round-backdrop-b'].style.backgroundImage;
+  assert.notEqual(nextGradient, initial);
   elements.next.dispatch('click');
-  expectBackground('#91d1bb');
-  elements['tap-undo'].dispatch('click');
-  expectBackground('#a7b9f5');
-  elements['tap-reset'].dispatch('click');
-  expectBackground('#a7b9f5');
+  assert.equal(document.documentElement.style.backgroundColor, undefined);
+  assert.equal(document.body.style.backgroundColor, undefined);
 });
 
 test('reveal target prevents iOS long-press selection and callouts', async () => {

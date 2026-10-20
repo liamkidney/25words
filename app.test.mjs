@@ -572,6 +572,20 @@ test('reveal target prevents iOS long-press selection and callouts', async () =>
   assert.equal(cleared,1);
 });
 
+test('Previous control stays visibly drawn on List 1 and works from restored later lists', async () => {
+  assert.match(html, /#previous\\s*\\{[^}]*background: #dce9ed;[^}]*color: #263f49;/s);
+  assert.match(html, /#previous:disabled\\s*\\{[^}]*opacity: 1;[^}]*color: #758991;/s);
+  assert.doesNotMatch(html, /#previous:disabled\\s*\\{[^}]*opacity: \\.35;/);
+  const first = await runApp();
+  assert.equal(first.elements.previous.disabled, true);
+  const resumed = await runApp({savedIndex:3});
+  assert.equal(resumed.elements.counter.textContent, 'List 4 of 100');
+  assert.equal(resumed.elements.previous.disabled, false);
+  resumed.elements.previous.dispatch('click');
+  assert.equal(resumed.elements.counter.textContent, 'List 3 of 100');
+  assert.equal(JSON.parse(resumed.store.get('25words-progress-v2')).positions['pack-1'],2);
+});
+
 test('previous and next are adjacent circular arrows with accessible labels', async () => {
   const previousIndex = html.indexOf('id="previous" class="panel-navigation"');
   const nextIndex = html.indexOf('id="next" class="panel-navigation"');

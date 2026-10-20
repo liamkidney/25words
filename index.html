@@ -11,11 +11,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=2">
   <title>25 Words or Less</title>
   <style>
-    :root { color-scheme: light; background-color: #f4a59b; }
+    :root { color-scheme: light; background-color: #fff; }
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f4a59b;
+      background: #fff;
       color: #1d2427;
       margin: 0;
       min-height: 100vh;
@@ -26,13 +26,32 @@
       display: flex;
       justify-content: center;
     }
-    /* The outermost background changes between lists; the card stays white. */
+    /* Always give iOS a white, non-changing surface to sample for its opaque
+       Home Screen status bar. Keep the entire top edge white in the webpage. */
+    .status-bar-surface {
+      position: fixed;
+      inset: 0 0 auto;
+      height: max(14px, env(safe-area-inset-top, 0px));
+      background-color: #fff;
+      z-index: 2;
+      pointer-events: none;
+    }
+    /* The changing pastel gradients fade smoothly out of the white header.
+       Mask the common parent so the existing crossfade still works normally. */
     .round-backdrop {
       position: fixed;
       inset: 0;
       z-index: 0;
       overflow: hidden;
       pointer-events: none;
+      -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0px,
+        transparent calc(env(safe-area-inset-top, 0px) + 12px),
+        #000 calc(env(safe-area-inset-top, 0px) + 190px));
+      mask-image: linear-gradient(to bottom,
+        transparent 0px,
+        transparent calc(env(safe-area-inset-top, 0px) + 12px),
+        #000 calc(env(safe-area-inset-top, 0px) + 190px));
     }
     .round-backdrop-layer {
       position: absolute;
@@ -263,6 +282,7 @@
     <div class="round-backdrop-layer" id="round-backdrop-a"></div>
     <div class="round-backdrop-layer" id="round-backdrop-b"></div>
   </div>
+  <div class="status-bar-surface" aria-hidden="true"></div>
   <div class="app-layout">
     <header class="header" id="header">
       <h1>25 Words <span>or Less</span></h1>

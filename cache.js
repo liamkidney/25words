@@ -1,6 +1,7 @@
-// Shared PWA cache manager for production and development. The service worker
-// serves cached assets offline, but new online builds must not stay stuck behind
-// an iOS Home Screen app restored from its suspended (not reloaded) state.
+// Production and development have separate scopes and cache namespaces.
+// Register the worker at a STABLE URL. Adding the current page revision to
+// the registration URL lets an old, suspended tab re-register an old worker,
+// potentially undoing an update completed by a newer tab.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     const script = document.querySelector('script[data-cache-manager]');
@@ -8,61 +9,70 @@ if ('serviceWorker' in navigator) {
     const hadController = Boolean(navigator.serviceWorker.controller);
     let refreshing = false;
     let checking = false;
-    let lastChecked = 0;
+    let lastCheck = 0;
 
+    // A new worker can take over an already-open, outdated document. Navigate
+    // with a fresh URL instead of trusting an ordinary reload on iOS.
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!hadController || refreshing) return;
       refreshing = true;
-      window.location.reload();
+      const destination = new URL(window.location.href);
+      destination.searchParams.set('_sw_refresh', String(Date.now()));
+      window.location.replace(destination.href);
     });
 
     try {
-      const registration = await navigator.serviceWorker.register(
-        './sw.js?v=' + encodeURIComponent(revision),
-        { updateViaCache: 'none' }
-      );
+      const registration = await navigator.serviceWorker.register('./sw.js', {
+        updateViaCache: 'none'
+      });
+      const channel = new URL(registration.scope).pathname.endsWith('/dev/') ? 'dev' : 'prod';
 
-      // Updating the worker alone is insufficient on iOS: reopening the Home
-      // Screen app can restore an old document without firing another "load".
-      // Fetch the published HTML without using browser/CDN caches, compare its
-      // revision with the script currently running, and navigate only if newer.
       async function checkForNewBuild() {
         if (refreshing || checking || document.visibilityState === 'hidden') return;
-        if (Date.now() - lastChecked < 2000) return;
         checking = true;
-        lastChecked = Date.now();
         try {
-          const checkUrl = new URL('index.html', registration.scope);
+          // A tiny build-time version file is simpler and less fragile than
+          // parsing the cached HTML. Use a unique URL and no-store semantics.
+          // The worker forwards this request to the network without caching.
+          const checkUrl = new URL('./version.json', registration.scope);
           checkUrl.searchParams.set('_version_check', String(Date.now()));
           const response = await fetch(checkUrl.href, { cache: 'no-store' });
           if (!response.ok) return;
-          const html = await response.text();
-          const match = html.match(/cache\.js\?v=([a-f0-9]{7,40})" data-cache-manager/);
-          if (!match || match[1] === revision) return;
-          refreshing = true;
+          const remote = await response.json();
+          if (remote?.channel !== channel ||
+              !/^[a-f0-9]{7,40}$/.test(remote?.revision || '') ||
+              remote.revision === revision) return;
+
+          // Avoid a navigation loop while GitHub Pages/CDN propagation is
+          // incomplete. An older document may briefly coexist with a newer
+          // version.json; a later manual reopening can retry the navigation.
           const destination = new URL(window.location.href);
-          destination.searchParams.set('_app_rev', match[1]);
+          if (destination.searchParams.get('_app_rev') === remote.revision) return;
+          refreshing = true;
+          destination.searchParams.set('_app_rev', remote.revision);
           window.location.replace(destination.href);
         } catch (_) {
-          // Offline mode is intentional; keep the currently cached app usable.
+          // No connection: remain in the current, functioning offline app.
         } finally {
           checking = false;
         }
       }
 
       function checkForUpdate() {
+        if (refreshing || document.visibilityState === 'hidden') return;
+        if (Date.now() - lastCheck < 2000) return;
+        lastCheck = Date.now();
         registration.update().catch(() => {});
         checkForNewBuild();
       }
+
       checkForUpdate();
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') checkForUpdate();
       });
       window.addEventListener('pageshow', () => checkForUpdate());
       window.addEventListener('focus', () => checkForUpdate());
-      window.setInterval(() => {
-        if (document.visibilityState === 'visible') checkForUpdate();
-      }, 60000);
+      window.setInterval(checkForUpdate, 60000);
     } catch (error) {
       console.warn('25 Words update check unavailable', error);
     }

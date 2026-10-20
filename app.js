@@ -15,6 +15,7 @@ const counter = document.getElementById('counter');
 const packLabel = document.getElementById('pack-label');
 const words = document.getElementById('words');
 const revealCover = document.getElementById('reveal-cover');
+const previous = document.getElementById('previous');
 const next = document.getElementById('next');
 const nextLabel = document.getElementById('next-label');
 const status = document.getElementById('status');
@@ -214,6 +215,7 @@ function render() {
   updateRoundBackground();
   updateViewedUI();
   packLabel.textContent = activePack().title;
+  previous.disabled = index === 0;
 
   if (index >= lists.length) {
     counter.textContent = 'All lists completed';
@@ -286,6 +288,7 @@ async function loadPack(packId) {
   const thisRequest = ++requestNumber;
   const oldMenuDisabled = menuToggle.disabled;
   menuToggle.disabled = true;
+  previous.disabled = true;
   next.disabled = true;
   status.textContent = 'Loading ' + pack.title + '…';
   try {
@@ -315,6 +318,7 @@ async function loadPack(packId) {
   } catch (error) {
     if (thisRequest === requestNumber) {
       menuToggle.disabled = oldMenuDisabled;
+      previous.disabled = activePackId === null || index === 0;
       next.disabled = activePackId === null || index >= lists.length;
       counter.textContent = activePackId === null ? 'Unable to load lists' : counter.textContent;
       status.textContent = error.message;
@@ -386,6 +390,12 @@ document.addEventListener('visibilitychange', () => {
 });
 
 menuToggle.addEventListener('click', () => setMenuOpen(listMenu.hidden));
+previous.addEventListener('click', () => {
+  if (!lists.length || index === 0) return;
+  index -= 1;
+  savePosition();
+  render();
+});
 next.addEventListener('click', () => {
   if (index >= lists.length) return;
   index += 1;

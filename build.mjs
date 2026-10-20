@@ -30,9 +30,10 @@ if (hasAppJs) {
 }
 html = html.replace('</head>',
   '  <script src="./cache.js?v=' + revision + '" data-cache-manager defer></script>\n</head>');
+// Show the build revision beneath, not inside, the floating word-list card.
 html = html.replace('</main>',
-  '  <div id="build-version" style="margin-top:14px;text-align:right;font-size:11px;color:#8b949a">' +
-  channel + ' · ' + revision + '</div>\n  </main>');
+  '</main>\n  <div id="build-version" style="margin:0 22px 10px;text-align:right;font-size:11px;color:#8b949a">' +
+  channel + ' · ' + revision + '</div>');
 
 const template = await readFile('sw.js', 'utf8');
 if (!template.includes('__CHANNEL__') || !template.includes('__REVISION__')) {

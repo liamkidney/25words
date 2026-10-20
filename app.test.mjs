@@ -573,9 +573,9 @@ test('reveal target prevents iOS long-press selection and callouts', async () =>
 });
 
 test('Previous control stays visibly drawn on List 1 and works from restored later lists', async () => {
-  assert.match(html, /#previous\\s*\\{[^}]*background: #dce9ed;[^}]*color: #263f49;/s);
-  assert.match(html, /#previous:disabled\\s*\\{[^}]*opacity: 1;[^}]*color: #758991;/s);
-  assert.doesNotMatch(html, /#previous:disabled\\s*\\{[^}]*opacity: \\.35;/);
+  assert.match(html, /#previous\s*\{[^}]*background: #dce9ed;[^}]*color: #263f49;/s);
+  assert.match(html, /#previous:disabled\s*\{[^}]*opacity: 1;[^}]*color: #758991;/s);
+  assert.doesNotMatch(html, /#previous:disabled\s*\{[^}]*opacity: \.35;/);
   const first = await runApp();
   assert.equal(first.elements.previous.disabled, true);
   const resumed = await runApp({savedIndex:3});

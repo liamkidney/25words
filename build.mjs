@@ -43,6 +43,7 @@ const worker = template.replaceAll('__CHANNEL__', channel).replaceAll('__REVISIO
 await mkdir(output, { recursive: true });
 await Promise.all([
   writeFile(join(output, 'index.html'), html),
+  writeFile(join(output, 'version.json'), JSON.stringify({channel, revision}) + '\n'),
   copyFile('cache.js', join(output, 'cache.js')),
 
   writeFile(join(output, 'sw.js'), worker),
